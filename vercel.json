@@ -4,6 +4,9 @@
   "buildCommand": "",
   "installCommand": "",
   "outputDirectory": "public",
+  "redirects": [
+    { "source": "/", "destination": "/login.html", "permanent": false }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

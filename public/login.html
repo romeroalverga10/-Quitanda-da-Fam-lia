@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDV Quitanda — Login</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <h1>🛒 Quitanda da Família</h1>
+      <p class="subtitulo">Sistema de Ponto de Venda</p>
+
+      <form id="formLogin">
+        <div class="form-group">
+          <label for="selOperador">Operador</label>
+          <select id="selOperador" required></select>
+        </div>
+        <div class="form-group">
+          <label for="inputSenha">Senha</label>
+          <input type="password" id="inputSenha" placeholder="Digite a senha" required autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-verde" style="width:100%;padding:12px;font-size:15px;margin-top:4px">
+          Entrar
+        </button>
+        <p class="login-erro hidden" id="erroLogin"></p>
+      </form>
+    </div>
+  </div>
+  <script src="/js/login.js"></script>
+</body>
+</html>

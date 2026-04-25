@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>PDV — Quitanda da Família</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="pdv-page">
+
+<div id="bannerAlertas" class="hidden"></div>
+
+<div class="pdv-layout">
+
+  <!-- ── ESQUERDA ───────────────────────────────────── -->
+  <div class="pdv-esq">
+
+    <!-- Cabeçalho interno -->
+    <div class="pdv-topo">
+      <div class="pdv-brand">
+        <div class="brand-nome">Quitanda da Família</div>
+        <div class="brand-sub">FRUTAS &amp; VERDURAS FRESCAS</div>
+      </div>
+      <div class="pdv-topo-dir">
+        <span id="badgeAlertas" class="badge-alerta hidden" onclick="mostrarAlertas()" title="Alertas">0</span>
+        <button class="btn btn-pdv-outline btn-sm" onclick="trocarOperador()">
+          <span style="font-size:11px;opacity:.7">Operador:</span> <strong id="nomeOperador">—</strong>
+        </button>
+        <button class="btn btn-pdv-outline btn-sm" onclick="location.href='/produtos.html'">Produtos</button>
+        <button class="btn btn-pdv-outline btn-sm" onclick="location.href='/relatorios.html'">Relatórios</button>
+        <button class="btn btn-pdv-outline btn-sm" onclick="location.href='/fornecedores.html'">Fornecedores</button>
+        <button class="btn btn-pdv-outline btn-sm" onclick="location.href='/contas.html'">Contas</button>
+        <button class="btn btn-pdv-red btn-sm" onclick="abrirCancelarVenda()">Cancelar Venda</button>
+      </div>
+    </div>
+
+    <!-- Barra de código de barras -->
+    <div class="campo-barras">
+      <input type="text" id="inputBarras" placeholder="🔍 Código de barras — pressione Enter" autofocus autocomplete="off">
+      <button class="btn btn-pdv-buscar" onclick="buscarPorCodigo()">Buscar</button>
+    </div>
+
+    <!-- Lista do carrinho -->
+    <div class="carrinho-lista">
+      <div id="corpoCarrinho">
+        <div id="linhaVazia" class="carrinho-vazio">
+          <div style="font-size:52px">🛒</div>
+          <div>REGISTRE SEUS PRODUTOS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="pdv-rodape">
+      <button class="btn btn-pdv-outline" onclick="cancelarVenda()">Limpar Venda</button>
+    </div>
+  </div>
+
+  <!-- ── DIREITA: painel de totais ─────────────────── -->
+  <div class="pdv-dir">
+    <div class="painel-total-header">TOTAL DA COMPRA</div>
+    <div class="painel-total-valor">R$&nbsp;<span id="totalVenda">0,00</span></div>
+    <div class="painel-total-qtd" id="qtdItens">0 produtos</div>
+
+    <div class="painel-resumo">
+      <div class="resumo-linha">
+        <span>SUBTOTAL</span>
+        <span id="resumoSubtotal">R$ 0,00</span>
+      </div>
+      <div class="resumo-linha">
+        <span>DESCONTO</span>
+        <span id="resumoDesconto">R$ 0,00</span>
+      </div>
+      <div class="resumo-linha">
+        <span>ÚLTIMO PRODUTO</span>
+        <span id="resumoUltimo">R$ 0,00</span>
+      </div>
+    </div>
+
+    <button class="btn btn-finalizar" onclick="abrirPagamento()" id="btnFinalizar" disabled>
+      Finalizar Venda
+    </button>
+  </div>
+</div>
+
+<!-- Elementos ocultos usados pelo JS -->
+<div style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0" aria-hidden="true">
+  <div id="painelProduto">
+    <div id="prodNome"></div>
+    <div id="prodCat"></div>
+    <div id="prodPreco"></div>
+    <div id="prodEstoque"></div>
+  </div>
+  <div id="painelVazio"></div>
+</div>
+
+<!-- ── MODAL PESAGEM ───────────────────────────────── -->
+<div class="modal-overlay" id="modalPesagem">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <h2>⚖️ Pesagem</h2>
+      <button class="modal-fechar" onclick="pararPollBalanca();fecharModal('modalPesagem')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Produto</label>
+      <div id="pesNomeProd" style="font-weight:bold;font-size:16px"></div>
+    </div>
+    <div class="form-group">
+      <label>Peso (kg)</label>
+      <input type="number" id="inputPeso" step="0.001" min="0.001" placeholder="0,000">
+    </div>
+    <div style="margin-bottom:14px">
+      <button class="btn btn-verde" style="width:100%" onclick="capturarBalanca()">
+        📡 Capturar da Balança
+      </button>
+      <div id="statusBalanca" style="font-size:12px;color:#777;margin-top:4px;text-align:center"></div>
+    </div>
+    <div id="valorPesado" class="troco-display hidden"></div>
+    <div class="d-flex gap-8 mt-16">
+      <button class="btn btn-cinza" style="flex:1" onclick="pararPollBalanca();fecharModal('modalPesagem')">Cancelar</button>
+      <button class="btn btn-laranja" style="flex:1" onclick="confirmarPesagem()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL QUANTIDADE ───────────────────────────── -->
+<div class="modal-overlay" id="modalQtd">
+  <div class="modal" style="width:320px">
+    <div class="modal-header">
+      <h2>Alterar Quantidade</h2>
+      <button class="modal-fechar" onclick="fecharModal('modalQtd')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Produto: <span id="qtdNomeProd"></span></label>
+      <input type="number" id="inputNovaQtd" min="1" step="1" value="1">
+    </div>
+    <div class="d-flex gap-8 mt-16">
+      <button class="btn btn-cinza" style="flex:1" onclick="fecharModal('modalQtd')">Cancelar</button>
+      <button class="btn btn-verde" style="flex:1" onclick="confirmarQtd()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL PAGAMENTO ────────────────────────────── -->
+<div class="modal-overlay" id="modalPagamento">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <h2>💳 Pagamento</h2>
+      <button class="modal-fechar" onclick="fecharModal('modalPagamento')">×</button>
+    </div>
+
+    <div style="font-size:20px;font-weight:bold;text-align:center;margin-bottom:16px;color:var(--verde-escuro)">
+      Total: R$ <span id="pagTotal"></span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn ativo" onclick="ativarTab('dinheiro')" id="tab-dinheiro">💵 Dinheiro</button>
+      <button class="tab-btn" onclick="ativarTab('pix')" id="tab-pix">📱 PIX</button>
+      <button class="tab-btn" onclick="ativarTab('cartao')" id="tab-cartao">💳 Cartão</button>
+    </div>
+
+    <div class="tab-content ativo" id="content-dinheiro">
+      <div class="form-group">
+        <label>Valor recebido (R$)</label>
+        <input type="number" id="inputRecebido" step="0.01" min="0" placeholder="0,00" oninput="calcularTroco()">
+      </div>
+      <div id="displayTroco" class="troco-display hidden"></div>
+    </div>
+
+    <div class="tab-content" id="content-pix">
+      <div id="qrcodeWrap" class="qrcode-wrap">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="content-cartao">
+      <div class="form-group">
+        <label>Tipo</label>
+        <div class="d-flex gap-8" style="margin-top:4px">
+          <label style="font-weight:normal;display:flex;align-items:center;gap:4px">
+            <input type="radio" name="tipoCartao" value="debito" checked> Débito
+          </label>
+          <label style="font-weight:normal;display:flex;align-items:center;gap:4px">
+            <input type="radio" name="tipoCartao" value="credito"> Crédito
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Bandeira</label>
+        <select id="selBandeira">
+          <option value="">— Selecione —</option>
+          <option>Visa</option>
+          <option>Mastercard</option>
+          <option>Elo</option>
+          <option>Hipercard</option>
+          <option>American Express</option>
+          <option>Outro</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="d-flex gap-8 mt-16">
+      <button class="btn btn-cinza" style="flex:1" onclick="fecharModal('modalPagamento')">Voltar</button>
+      <button class="btn btn-verde btn-grande" style="flex:2" onclick="confirmarPagamento()" id="btnConfirmarPag">
+        ✅ Confirmar Venda
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL ALERTAS ──────────────────────────────── -->
+<div class="modal-overlay" id="modalAlertas">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <h2>⚠️ Alertas</h2>
+      <button class="modal-fechar" onclick="fecharModal('modalAlertas')">×</button>
+    </div>
+    <div id="conteudoAlertas"></div>
+  </div>
+</div>
+
+<!-- ── MODAL QUANTIDADE UNITÁRIA ─────────────────── -->
+<div class="modal-overlay" id="modalQtdUnit">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <h2>Quantidade</h2>
+      <button class="modal-fechar" onclick="fecharModal('modalQtdUnit')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Produto</label>
+      <div id="unitNomeProd" style="font-weight:bold;font-size:16px"></div>
+      <div id="unitPrecoProd" style="font-size:13px;color:#777;margin-top:2px"></div>
+    </div>
+    <div class="form-group">
+      <label>Quantidade</label>
+      <input type="number" id="inputQtdUnit" min="1" step="1" value="1" oninput="atualizarValorUnit()" onkeydown="if(event.key==='Enter')confirmarQtdUnit()" style="font-size:22px;text-align:center">
+    </div>
+    <div id="valorUnit" class="troco-display" style="text-align:center;font-size:18px;margin-bottom:12px"></div>
+    <div class="d-flex gap-8 mt-16">
+      <button class="btn btn-cinza" style="flex:1" onclick="fecharModal('modalQtdUnit')">Cancelar</button>
+      <button class="btn btn-laranja" style="flex:1" onclick="confirmarQtdUnit()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CANCELAR VENDA ───────────────────────── -->
+<div class="modal-overlay" id="modalCancelarVenda">
+  <div class="modal" style="width:580px">
+    <div class="modal-header">
+      <h2>Cancelar Venda Finalizada</h2>
+      <button class="modal-fechar" onclick="fecharModal('modalCancelarVenda')">×</button>
+    </div>
+    <p style="font-size:13px;color:#777;margin-bottom:12px">Selecione a venda que deseja cancelar. O estoque será restaurado automaticamente.</p>
+    <div id="listaVendasRecentes" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script src="/js/pdv.js"></script>
+</body>
+</html>

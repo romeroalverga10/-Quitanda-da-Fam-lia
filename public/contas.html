@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Contas — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/fornecedores.html'">Fornecedores</button>
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="contas-layout">
+
+  <!-- Cards de resumo -->
+  <div class="cards-resumo" style="margin-bottom:16px">
+    <div class="card-resumo">
+      <div class="label">A PAGAR</div>
+      <div class="valor" id="cardPagar">R$ 0,00</div>
+    </div>
+    <div class="card-resumo vermelho-escuro">
+      <div class="label">VENCIDO</div>
+      <div class="valor" id="cardVencido">R$ 0,00</div>
+    </div>
+    <div class="card-resumo laranja">
+      <div class="label">A RECEBER</div>
+      <div class="valor" id="cardReceber">R$ 0,00</div>
+    </div>
+    <div class="card-resumo" id="cardSaldoBox">
+      <div class="label">SALDO</div>
+      <div class="valor" id="cardSaldo">R$ 0,00</div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="contas-toolbar">
+    <select id="filtroTipo" onchange="aplicarFiltros()">
+      <option value="">Todos os tipos</option>
+      <option value="pagar">A Pagar</option>
+      <option value="receber">A Receber</option>
+    </select>
+    <select id="filtroStatus" onchange="aplicarFiltros()">
+      <option value="">Todos os status</option>
+      <option value="pendente">Pendente</option>
+      <option value="pago">Pago</option>
+      <option value="vencido">Vencido</option>
+    </select>
+    <input type="date" id="filtroDataInicio" onchange="aplicarFiltros()" title="Vencimento de">
+    <input type="date" id="filtroDataFim" onchange="aplicarFiltros()" title="Vencimento até">
+    <button class="btn btn-outline btn-sm" onclick="limparFiltros()">Limpar</button>
+    <button class="btn btn-verde" onclick="abrirModalNovo()">+ Nova Conta</button>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Descrição</th>
+          <th>Tipo</th>
+          <th>Valor</th>
+          <th>Vencimento</th>
+          <th>Pagamento</th>
+          <th>Status</th>
+          <th>Fornecedor</th>
+          <th style="width:110px">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="corpoContas"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL CONTA -->
+<div class="modal-overlay" id="modalConta">
+  <div class="modal" style="width:540px">
+    <div class="modal-header">
+      <h2 id="modalContaTitulo">Nova Conta</h2>
+      <button class="modal-fechar" onclick="fecharModal('modalConta')">×</button>
+    </div>
+    <form id="formConta" onsubmit="salvarConta(event)">
+      <input type="hidden" id="cId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Descrição *</label>
+          <input type="text" id="cDescricao" required>
+        </div>
+        <div class="form-group">
+          <label>Tipo *</label>
+          <select id="cTipo" required onchange="toggleFornecedor()">
+            <option value="">— Selecione —</option>
+            <option value="pagar">A Pagar</option>
+            <option value="receber">A Receber</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valor (R$) *</label>
+          <input type="number" id="cValor" step="0.01" min="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>Vencimento *</label>
+          <input type="date" id="cVencimento" required>
+        </div>
+        <div class="form-group" id="campoFornecedor" style="display:none">
+          <label>Fornecedor</label>
+          <select id="cFornecedor">
+            <option value="">— Nenhum —</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Observações</label>
+          <textarea id="cObs" rows="3" style="resize:vertical"></textarea>
+        </div>
+      </div>
+      <div class="d-flex gap-8 mt-16">
+        <button type="button" class="btn btn-cinza" style="flex:1" onclick="fecharModal('modalConta')">Cancelar</button>
+        <button type="submit" class="btn btn-verde" style="flex:2">Salvar Conta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/contas.js"></script>
+</body>
+</html>

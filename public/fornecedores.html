@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fornecedores — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/contas.html'">Contas</button>
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="fornecedores-layout">
+
+  <div class="produtos-toolbar">
+    <input type="text" id="busca" placeholder="Buscar por nome, CNPJ/CPF ou telefone..." oninput="filtrar()">
+    <label style="display:flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap">
+      <input type="checkbox" id="mostrarInativos" onchange="filtrar()"> Mostrar inativos
+    </label>
+    <button class="btn btn-verde" onclick="abrirModalNovo()">+ Novo Fornecedor</button>
+  </div>
+
+  <div class="card">
+    <table id="tabelaFornecedores">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>CNPJ / CPF</th>
+          <th>Telefone</th>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th style="width:130px">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="corpoFornecedores"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL FORNECEDOR -->
+<div class="modal-overlay" id="modalFornecedor">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <h2 id="modalTitulo">Novo Fornecedor</h2>
+      <button class="modal-fechar" onclick="fecharModal('modalFornecedor')">×</button>
+    </div>
+    <form id="formFornecedor" onsubmit="salvarFornecedor(event)">
+      <input type="hidden" id="fId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Nome *</label>
+          <input type="text" id="fNome" required>
+        </div>
+        <div class="form-group">
+          <label>CNPJ / CPF</label>
+          <input type="text" id="fCnpj" placeholder="00.000.000/0000-00">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="fTelefone" placeholder="(00) 00000-0000">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>E-mail</label>
+          <input type="email" id="fEmail">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Endereço</label>
+          <input type="text" id="fEndereco">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Observações</label>
+          <textarea id="fObs" rows="3" style="resize:vertical"></textarea>
+        </div>
+      </div>
+      <div class="d-flex gap-8 mt-16">
+        <button type="button" class="btn btn-cinza" style="flex:1" onclick="fecharModal('modalFornecedor')">Cancelar</button>
+        <button type="submit" class="btn btn-verde" style="flex:2">Salvar Fornecedor</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/fornecedores.js"></script>
+</body>
+</html>

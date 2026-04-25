@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatórios — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="relatorio-layout">
+  <div class="relatorio-header">
+    <h2 style="color:var(--verde-escuro)">📊 Relatório de Vendas</h2>
+    <input type="date" id="seletorData" onchange="carregarRelatorio()">
+    <button class="btn btn-verde" onclick="carregarRelatorio()">Consultar</button>
+    <button class="btn btn-cinza" onclick="window.print()">🖨️ Imprimir</button>
+  </div>
+
+  <div class="cards-resumo">
+    <div class="card-resumo">
+      <div class="label">Total de Vendas</div>
+      <div class="valor" id="totalVendas">—</div>
+      <div style="font-size:12px;color:#888;margin-top:4px" id="qtdVendas">0 vendas</div>
+    </div>
+    <div class="card-resumo laranja">
+      <div class="label">Dinheiro</div>
+      <div class="valor" id="totalDinheiro">R$ 0,00</div>
+    </div>
+    <div class="card-resumo laranja">
+      <div class="label">PIX</div>
+      <div class="valor" id="totalPix">R$ 0,00</div>
+    </div>
+    <div class="card-resumo laranja">
+      <div class="label">Cartão</div>
+      <div class="valor" id="totalCartao">R$ 0,00</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="secao-rel card">
+      <h3>🏆 Top 10 Produtos</h3>
+      <table id="tabelaTop10">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTop10">
+          <tr><td colspan="4" class="text-center" style="color:#aaa">Nenhum dado</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="secao-rel card">
+      <h3>👤 Vendas por Operador</h3>
+      <table id="tabelaOperadores">
+        <thead>
+          <tr>
+            <th>Operador</th>
+            <th>Vendas</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="corpoOperadores">
+          <tr><td colspan="3" class="text-center" style="color:#aaa">Nenhum dado</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/js/relatorios.js"></script>
+</body>
+</html>

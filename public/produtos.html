@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Produtos — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="produtos-layout">
+  <div class="produtos-toolbar">
+    <input type="text" id="busca" placeholder="Buscar por nome ou código..." oninput="filtrar()">
+    <select id="filtroCategoria" onchange="filtrar()">
+      <option value="">Todas as categorias</option>
+    </select>
+    <button class="btn btn-verde" onclick="abrirModalNovo()">+ Novo Produto</button>
+  </div>
+
+  <div class="card">
+    <table id="tabelaProdutos">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Código</th>
+          <th>Categoria</th>
+          <th>Preço</th>
+          <th>Unidade</th>
+          <th>Estoque</th>
+          <th>Mín.</th>
+          <th>Validade</th>
+          <th style="width:100px">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="corpoProdutos"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── MODAL PRODUTO ──────────────────────────────── -->
+<div class="modal-overlay" id="modalProduto">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <h2 id="modalTitulo">Novo Produto</h2>
+      <button class="modal-fechar" onclick="fecharModal()">×</button>
+    </div>
+    <form id="formProduto" onsubmit="salvarProduto(event)">
+      <input type="hidden" id="prodId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Nome *</label>
+          <input type="text" id="pNome" required>
+        </div>
+        <div class="form-group">
+          <label>Código de Barras</label>
+          <input type="text" id="pCodigo">
+        </div>
+        <div class="form-group">
+          <label>Categoria *</label>
+          <select id="pCategoria" required onchange="toggleValidade()"></select>
+        </div>
+        <div class="form-group">
+          <label>Preço de Venda (R$) *</label>
+          <input type="number" id="pPreco" step="0.01" min="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>Unidade *</label>
+          <select id="pUnidade" required>
+            <option value="unidade">Unidade</option>
+            <option value="kg">Kg (pesado)</option>
+            <option value="litro">Litro</option>
+            <option value="caixa">Caixa</option>
+            <option value="duzia">Dúzia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Estoque Atual</label>
+          <input type="number" id="pEstoqueAtual" step="0.001" min="0" value="0">
+        </div>
+        <div class="form-group">
+          <label>Estoque Mínimo</label>
+          <input type="number" id="pEstoqueMin" step="0.001" min="0" value="0">
+        </div>
+        <div class="form-group" id="campoValidade" style="grid-column:1/-1">
+          <label>Data de Validade</label>
+          <input type="date" id="pValidade">
+        </div>
+      </div>
+      <div class="d-flex gap-8 mt-16">
+        <button type="button" class="btn btn-cinza" style="flex:1" onclick="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn btn-verde" style="flex:2">Salvar Produto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/produtos.js"></script>
+</body>
+</html>

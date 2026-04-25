@@ -1,0 +1,107 @@
+=========================================
+  PDV QUITANDA DA FAMILIA
+  Guia de Instalacao
+=========================================
+
+ANTES DE COMECAR
+-----------------
+Voce precisara de:
+  - Pendrive com a pasta "Quitanda da familia"
+  - Cabo USB da balanca (Elgin DP30t)
+  - Cabo USB da impressora (Epson TM-T20X)
+  - Cabo RJ11 da gaveta conectado na impressora
+
+
+PASSO 1 - INSTALAR O NODE.JS
+------------------------------
+1. Abra o navegador e acesse: https://nodejs.org
+2. Clique em "Download LTS"
+3. Execute o instalador e clique em Avancar ate concluir
+4. Reinicie o computador
+
+
+PASSO 2 - INSTALAR O DRIVER DA IMPRESSORA
+-------------------------------------------
+1. Abra a pasta "APD_607R1_T20X_WM" (esta dentro da pasta do sistema)
+2. Execute o arquivo "APD_607R1_T20X.exe"
+3. Siga os passos do instalador
+4. Conecte a impressora via USB quando solicitado
+5. Aguarde o Windows reconhecer a impressora
+
+
+PASSO 3 - CONECTAR A BALANCA
+------------------------------
+1. Conecte o cabo USB da balanca no computador
+2. Aguarde o Windows instalar o driver automaticamente
+   (aparece uma notificacao no canto da tela)
+3. Se nao instalar automaticamente:
+   - Acesse https://ftdichip.com/drivers/vcp-drivers/
+   - Baixe e instale o driver VCP para Windows
+
+
+PASSO 4 - COPIAR O SISTEMA
+----------------------------
+1. Copie a pasta "Quitanda da familia" do pendrive
+2. Cole em: C:\Users\[seu usuario]\Desktop\
+   (ou em qualquer lugar de sua preferencia)
+
+
+PASSO 5 - EXECUTAR O INSTALADOR
+---------------------------------
+1. Abra a pasta "Quitanda da familia"
+2. Clique duas vezes em "INSTALAR.bat"
+3. Aguarde o processo terminar
+4. O instalador vai detectar automaticamente:
+   - A porta da balanca (COM3, COM4, etc.)
+   - O nome da impressora Epson
+   - E vai configurar tudo sozinho
+
+
+PASSO 6 - INICIAR O SISTEMA
+-----------------------------
+1. Clique duas vezes em "Iniciar PDV.bat"
+2. O navegador abrira automaticamente com o PDV
+3. Use as credenciais:
+   - Administrador: usuario "Admin" / senha "admin123"
+   - Operador:      usuario "Operador" / senha "op123"
+
+   IMPORTANTE: Troque as senhas apos o primeiro acesso!
+
+
+PROBLEMAS COMUNS
+-----------------
+
+Balanca nao reconhecida:
+  - Verifique se o cabo USB esta conectado
+  - Abra o Gerenciador de Dispositivos
+    (clique direito no botao Iniciar > Gerenciador de Dispositivos)
+  - Em "Portas (COM e LPT)" veja qual COM aparece com o nome FTDI
+  - Abra o arquivo config.json e troque "portaBalanca" para essa COM
+
+Impressora nao imprime:
+  - Verifique se a impressora esta ligada e com papel
+  - Va em Painel de Controle > Dispositivos e Impressoras
+  - Copie o nome exato da impressora Epson
+  - Abra o config.json e cole em "impressora"
+
+PDV nao abre no navegador:
+  - Feche o "Iniciar PDV.bat" e abra novamente
+  - Se continuar, abra o navegador manualmente e acesse:
+    http://localhost:3000
+
+Porta 3000 em uso:
+  - Abra o Gerenciador de Tarefas (Ctrl+Shift+Esc)
+  - Va em Detalhes, procure "node.exe" e finalize o processo
+  - Inicie o PDV novamente
+
+
+SUPORTE
+--------
+Em caso de duvidas, entre em contato com o tecnico responsavel.
+Acesso remoto disponivel via AnyDesk.
+
+
+=========================================
+  Sistema desenvolvido para uso exclusivo
+  da Quitanda da Familia
+=========================================

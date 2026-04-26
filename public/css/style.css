@@ -216,13 +216,13 @@ body.pdv-page {
 
 .brand-nome {
   font-family: 'Dancing Script', 'Segoe Script', 'Brush Script MT', cursive;
-  font-size: 36px;
+  font-size: 52px;
   color: #fff;
   font-weight: 700;
 }
 
 .brand-sub {
-  font-size: 13px;
+  font-size: 23px;
   color: rgba(255,255,255,0.55);
   letter-spacing: 2.5px;
   margin-top: 2px;

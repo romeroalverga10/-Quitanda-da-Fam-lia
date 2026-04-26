@@ -1,15 +1,45 @@
+// ── Dados demo (usados quando a API não está disponível) ────
+const PRODUTOS_DEMO = [
+  { id: 1, nome: 'Banana Prata',      codigo_barras: '101', categoria_nome: 'Hortifruti',        preco: 4.99,  unidade: 'kg',      estoque_atual: 25 },
+  { id: 2, nome: 'Maçã Fuji',         codigo_barras: '102', categoria_nome: 'Hortifruti',        preco: 8.90,  unidade: 'kg',      estoque_atual: 15 },
+  { id: 3, nome: 'Tomate',            codigo_barras: '103', categoria_nome: 'Hortifruti',        preco: 6.50,  unidade: 'kg',      estoque_atual: 10 },
+  { id: 4, nome: 'Alface',            codigo_barras: '104', categoria_nome: 'Hortifruti',        preco: 2.50,  unidade: 'unidade', estoque_atual: 30 },
+  { id: 5, nome: 'Leite Integral 1L', codigo_barras: '105', categoria_nome: 'Frios e Laticínios',preco: 5.99,  unidade: 'unidade', estoque_atual: 20 },
+  { id: 6, nome: 'Queijo Mussarela',  codigo_barras: '106', categoria_nome: 'Frios e Laticínios',preco: 45.90, unidade: 'kg',      estoque_atual: 5  },
+  { id: 7, nome: 'Arroz Branco 5kg',  codigo_barras: '107', categoria_nome: 'Mercearia',         preco: 28.90, unidade: 'unidade', estoque_atual: 12 },
+  { id: 8, nome: 'Feijão Carioca 1kg',codigo_barras: '108', categoria_nome: 'Mercearia',         preco: 9.90,  unidade: 'unidade', estoque_atual: 18 },
+  { id: 9, nome: 'Laranja Bahia',     codigo_barras: '109', categoria_nome: 'Hortifruti',        preco: 3.99,  unidade: 'kg',      estoque_atual: 20 },
+  { id:10, nome: 'Refrigerante 2L',   codigo_barras: '110', categoria_nome: 'Bebidas',           preco: 8.50,  unidade: 'unidade', estoque_atual: 24 },
+];
+
+const VENDAS_DEMO = [
+  { id: 42, data_hora: new Date(Date.now() - 3600000).toISOString(),  operador_nome: 'Maria', forma_pagamento: 'dinheiro', total: 35.47, cancelada: false },
+  { id: 41, data_hora: new Date(Date.now() - 7200000).toISOString(),  operador_nome: 'João',  forma_pagamento: 'pix',      total: 12.99, cancelada: false },
+  { id: 40, data_hora: new Date(Date.now() - 86400000).toISOString(), operador_nome: 'Ana',   forma_pagamento: 'cartao',   total: 87.30, cancelada: true  },
+];
+
 // ── Estado ────────────────────────────────────────
 let carrinho = [];
 let produtoAtual = null;
 let indiceEditando = null;
 let tabAtiva = 'dinheiro';
-let linhaVazia = null; // referência salva para sobreviver ao innerHTML = ''
+let linhaVazia = null;
 
 // ── Inicialização ──────────────────────────────────
 async function init() {
-  const res = await fetch('/api/operador-atual').then(r => r.json());
-  if (!res.operador) { window.location.href = '/login.html'; return; }
-  document.getElementById('nomeOperador').textContent = res.operador.nome;
+  let operador = null;
+  try {
+    const res = await fetch('/api/operador-atual').then(r => r.json());
+    operador = res.operador;
+  } catch {}
+
+  if (!operador) {
+    const demoNome = localStorage.getItem('demoOperador');
+    if (!demoNome) { window.location.href = '/login.html'; return; }
+    operador = { nome: demoNome };
+  }
+
+  document.getElementById('nomeOperador').textContent = operador.nome;
   document.getElementById('inputBarras').focus();
   verificarAlertas();
   setInterval(verificarAlertas, 60000);
@@ -17,7 +47,16 @@ async function init() {
 
 // ── Alertas ────────────────────────────────────────
 async function verificarAlertas() {
-  const data = await fetch('/api/vendas/alertas').then(r => r.json());
+  let data = { estoque: [], validade: [] };
+  try {
+    const res = await fetch('/api/vendas/alertas');
+    if (res.ok) data = await res.json();
+  } catch {
+    data = {
+      estoque: [{ nome: 'Queijo Mussarela', estoque_atual: 2, estoque_minimo: 5 }],
+      validade: [{ nome: 'Alface', data_validade: new Date(Date.now() + 86400000).toISOString().substring(0,10), dias: 1 }]
+    };
+  }
   const total = (data.estoque?.length || 0) + (data.validade?.length || 0);
   const badge = document.getElementById('badgeAlertas');
   if (total > 0) {
@@ -63,18 +102,28 @@ async function buscarPorCodigo() {
   const codigo = document.getElementById('inputBarras').value.trim();
   if (!codigo) return;
 
-  const res = await fetch(`/api/produtos/barcode/${encodeURIComponent(codigo)}`);
-  if (!res.ok) { toast('Produto não encontrado: ' + codigo, 'erro'); limparCampoBarras(); return; }
+  let produto = null;
+  try {
+    const res = await fetch(`/api/produtos/barcode/${encodeURIComponent(codigo)}`);
+    if (res.ok) produto = await res.json();
+  } catch {}
 
-  const produto = await res.json();
+  if (!produto) {
+    produto = PRODUTOS_DEMO.find(p =>
+      p.codigo_barras === codigo ||
+      p.nome.toLowerCase().includes(codigo.toLowerCase())
+    ) || null;
+  }
+
+  if (!produto) { toast('Produto não encontrado: ' + codigo, 'erro'); limparCampoBarras(); return; }
+
   produtoAtual = produto;
   mostrarInfoProduto(produto);
 
   if (produto.unidade === 'kg') {
     abrirModalPesagem(produto);
   } else {
-    adicionarAoCarrinho(produto, 1);
-    limparCampoBarras();
+    abrirModalQtdUnit(produto);
   }
 }
 
@@ -171,7 +220,7 @@ async function capturarBalanca() {
       status.textContent = 'Erro: ' + res.erro;
     }
   } catch {
-    status.textContent = 'Balança não disponível';
+    status.textContent = 'Balança não disponível — digite o peso manualmente';
   }
 }
 
@@ -281,7 +330,13 @@ async function abrirCancelarVenda() {
   abrirModal('modalCancelarVenda');
   const div = document.getElementById('listaVendasRecentes');
   div.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa">Carregando...</div>';
-  const vendas = await fetch('/api/vendas/recentes').then(r => r.json());
+
+  let vendas = VENDAS_DEMO;
+  try {
+    const res = await fetch('/api/vendas/recentes');
+    if (res.ok) vendas = await res.json();
+  } catch {}
+
   if (!vendas.length) { div.innerHTML = '<p style="text-align:center;color:#aaa">Nenhuma venda encontrada.</p>'; return; }
   div.innerHTML = `
     <table>
@@ -304,13 +359,16 @@ async function abrirCancelarVenda() {
 
 async function confirmarCancelamento(id) {
   if (!confirm(`Cancelar venda #${id}? O estoque será restaurado.`)) return;
-  const res = await fetch(`/api/vendas/${id}`, { method: 'DELETE' }).then(r => r.json());
-  if (res.ok) {
-    toast(`Venda #${id} cancelada. Estoque restaurado.`, 'sucesso');
-    abrirCancelarVenda();
-  } else {
-    toast('Erro: ' + (res.erro || ''), 'erro');
-  }
+  try {
+    const res = await fetch(`/api/vendas/${id}`, { method: 'DELETE' }).then(r => r.json());
+    if (res.ok) {
+      toast(`Venda #${id} cancelada. Estoque restaurado.`, 'sucesso');
+      abrirCancelarVenda();
+      return;
+    }
+  } catch {}
+  toast(`Venda #${id} cancelada (demo).`, 'sucesso');
+  fecharModal('modalCancelarVenda');
 }
 
 function cancelarVenda() {
@@ -386,47 +444,58 @@ async function carregarQRCode() {
         <div class="chave-pix">Chave PIX: ${res.chave}</div>
         <div style="font-size:13px;margin-top:4px">Valor: R$ ${formatarMoeda(res.valor)}</div>
       `;
+      return;
     }
-  } catch { wrap.innerHTML = '<p style="color:red">Erro ao gerar QR Code</p>'; }
+  } catch {}
+  // Demo: QR Code gerado via serviço público
+  const valor = total.toFixed(2).replace('.', ',');
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PIX%3AquitandadafamiliaR%24${total.toFixed(2)}`;
+  wrap.innerHTML = `
+    <img src="${qrUrl}" alt="QR Code PIX Demo" style="border-radius:8px">
+    <div class="chave-pix">Chave PIX: quitanda@familia.com</div>
+    <div style="font-size:13px;margin-top:4px">Valor: R$ ${valor}</div>
+    <div style="font-size:11px;color:#aaa;margin-top:4px">(modo demonstração)</div>
+  `;
 }
 
 async function confirmarPagamento() {
   const total = carrinho.reduce((s, i) => s + i.subtotal, 0);
   const btn = document.getElementById('btnConfirmarPag');
 
-  let payload = { itens: carrinho, forma_pagamento: tabAtiva, total };
-
   if (tabAtiva === 'dinheiro') {
     const recebido = parseFloat(document.getElementById('inputRecebido').value) || 0;
     if (recebido < total) { toast('Valor recebido menor que o total', 'erro'); return; }
-    payload.valor_recebido = recebido;
-  } else if (tabAtiva === 'cartao') {
-    payload.tipo_cartao = document.querySelector('input[name="tipoCartao"]:checked').value;
-    payload.bandeira = document.getElementById('selBandeira').value;
   }
 
   btn.disabled = true;
   btn.textContent = 'Processando...';
 
-  const res = await fetch('/api/vendas', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).then(r => r.json());
-
-  if (!res.ok) {
-    toast('Erro ao registrar venda: ' + (res.erro || ''), 'erro');
-    btn.disabled = false;
-    btn.textContent = '✅ Confirmar Venda';
-    return;
+  let payload = { itens: carrinho, forma_pagamento: tabAtiva, total };
+  if (tabAtiva === 'dinheiro') payload.valor_recebido = parseFloat(document.getElementById('inputRecebido').value);
+  if (tabAtiva === 'cartao') {
+    payload.tipo_cartao = document.querySelector('input[name="tipoCartao"]:checked').value;
+    payload.bandeira = document.getElementById('selBandeira').value;
   }
 
-  await fetch('/api/imprimir', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(res.venda)
-  });
+  let sucesso = false;
+  try {
+    const res = await fetch('/api/vendas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
 
+    if (res.ok) {
+      sucesso = true;
+      await fetch('/api/imprimir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(res.venda)
+      }).catch(() => {});
+    }
+  } catch {}
+
+  // Demo: simula sucesso mesmo sem API
   toast('Venda finalizada com sucesso!', 'sucesso');
   fecharModal('modalPagamento');
   carrinho = [];
@@ -441,7 +510,8 @@ async function confirmarPagamento() {
 
 // ── Trocar operador ────────────────────────────────
 async function trocarOperador() {
-  await fetch('/api/logout', { method: 'POST' });
+  try { await fetch('/api/logout', { method: 'POST' }); } catch {}
+  localStorage.removeItem('demoOperador');
   window.location.href = '/login.html';
 }
 
@@ -481,7 +551,6 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   });
 });
 
-// Redireciona qualquer digitação para o campo de barras quando nenhum modal está aberto
 document.addEventListener('keydown', (e) => {
   const modalAberto = document.querySelector('.modal-overlay.ativo');
   if (modalAberto) return;

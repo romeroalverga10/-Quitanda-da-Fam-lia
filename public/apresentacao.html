@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDV Quitanda — Sistema para Hortifruti e Mercadinhos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --verde: #2e7d32;
+      --verde-claro: #43a047;
+      --verde-bg: #e8f5e9;
+      --vermelho: #b71c1c;
+      --vermelho-claro: #e53935;
+      --cinza: #f5f5f5;
+      --texto: #212121;
+      --texto-suave: #616161;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--texto);
+      background: #fff;
+    }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--verde) 0%, var(--verde-claro) 100%);
+      color: #fff;
+      padding: 80px 20px 60px;
+      text-align: center;
+    }
+
+    .hero .tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 13px;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 span {
+      color: #a5d6a7;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      opacity: 0.9;
+      max-width: 560px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: #fff;
+      color: var(--verde);
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.2); }
+
+    .btn-outline {
+      background: transparent;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.7);
+      padding: 13px 28px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.15s;
+    }
+
+    .btn-outline:hover { background: rgba(255,255,255,0.15); }
+
+    /* SEÇÃO GENÉRICA */
+    section { padding: 70px 20px; }
+
+    .container { max-width: 1080px; margin: 0 auto; }
+
+    .section-title {
+      text-align: center;
+      font-size: 1.9rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--texto);
+    }
+
+    .section-sub {
+      text-align: center;
+      color: var(--texto-suave);
+      font-size: 1rem;
+      margin-bottom: 50px;
+    }
+
+    /* PROBLEMAS */
+    .problemas { background: var(--cinza); }
+
+    .problemas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+    }
+
+    .problema-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px 22px;
+      border-left: 4px solid var(--vermelho-claro);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .problema-card .icon { font-size: 2rem; margin-bottom: 12px; }
+    .problema-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .problema-card p { font-size: 0.9rem; color: var(--texto-suave); line-height: 1.5; }
+
+    /* FUNCIONALIDADES */
+    .funcionalidades-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px;
+    }
+
+    .func-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 14px;
+      padding: 28px 24px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .func-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.1); transform: translateY(-3px); }
+
+    .func-icon {
+      width: 52px;
+      height: 52px;
+      background: var(--verde-bg);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: 16px;
+    }
+
+    .func-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+    .func-card p { font-size: 0.9rem; color: var(--texto-suave); line-height: 1.55; }
+
+    /* HARDWARE */
+    .hardware { background: var(--verde); color: #fff; }
+    .hardware .section-title { color: #fff; }
+    .hardware .section-sub { color: rgba(255,255,255,0.75); }
+
+    .hardware-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .hw-card {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .hw-card .icon { font-size: 2.4rem; margin-bottom: 10px; }
+    .hw-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .hw-card p { font-size: 0.85rem; opacity: 0.8; }
+
+    /* PREÇOS */
+    .precos { background: var(--cinza); }
+
+    .precos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .preco-card {
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 16px;
+      padding: 36px 28px;
+      text-align: center;
+      position: relative;
+      transition: box-shadow 0.2s;
+    }
+
+    .preco-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+
+    .preco-card.destaque {
+      border-color: var(--verde);
+      box-shadow: 0 4px 20px rgba(46,125,50,0.2);
+    }
+
+    .badge-destaque {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--verde);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 5px 18px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .preco-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--texto-suave); }
+
+    .preco-valor {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--verde);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .preco-valor sup { font-size: 1.2rem; vertical-align: super; }
+    .preco-periodo { font-size: 0.85rem; color: var(--texto-suave); margin-bottom: 24px; }
+
+    .preco-lista {
+      list-style: none;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+
+    .preco-lista li {
+      padding: 7px 0;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .preco-lista li:last-child { border-bottom: none; }
+
+    .check { color: var(--verde); font-weight: 700; flex-shrink: 0; }
+
+    .btn-contato {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .btn-contato.verde {
+      background: var(--verde);
+      color: #fff;
+      border: none;
+    }
+
+    .btn-contato.verde:hover { background: var(--verde-claro); }
+
+    .btn-contato.borda {
+      background: transparent;
+      color: var(--verde);
+      border: 2px solid var(--verde);
+    }
+
+    .btn-contato.borda:hover { background: var(--verde-bg); }
+
+    /* DEPOIMENTO */
+    .depoimento-box {
+      background: var(--verde-bg);
+      border-left: 5px solid var(--verde);
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 680px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      font-style: italic;
+      color: var(--texto);
+    }
+
+    .depoimento-box .autor {
+      margin-top: 16px;
+      font-style: normal;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--verde);
+    }
+
+    /* CONTATO / FOOTER */
+    .contato {
+      background: var(--texto);
+      color: #fff;
+      text-align: center;
+    }
+
+    .contato h2 { font-size: 1.9rem; font-weight: 700; margin-bottom: 12px; }
+    .contato p { opacity: 0.75; margin-bottom: 32px; font-size: 1rem; }
+
+    .whatsapp-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #25d366;
+      color: #fff;
+      text-decoration: none;
+      padding: 16px 36px;
+      border-radius: 50px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .whatsapp-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(37,211,102,0.5); }
+
+    .footer-note {
+      margin-top: 40px;
+      font-size: 0.8rem;
+      opacity: 0.4;
+    }
+
+    /* RESPONSIVO */
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.9rem; }
+      .hero p { font-size: 1rem; }
+      section { padding: 50px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="tag">Sistema PDV para Hortifruti e Mercadinhos</div>
+    <h1>Controle total da sua <span>quitanda</span><br>no computador</h1>
+    <p>
+      Sistema de caixa completo com balança, impressora de cupom e controle de estoque.
+      Simples de usar, roda no seu PC sem precisar de internet.
+    </p>
+    <div class="hero-btns">
+      <a href="#precos" class="btn-primary">Ver planos e preços</a>
+      <a href="#funcionalidades" class="btn-outline">O que inclui</a>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMAS -->
+<section class="problemas">
+  <div class="container">
+    <h2 class="section-title">Você ainda faz isso no seu negócio?</h2>
+    <p class="section-sub">Esses problemas custam dinheiro todo dia.</p>
+    <div class="problemas-grid">
+      <div class="problema-card">
+        <div class="icon">📝</div>
+        <h3>Anotação no caderno</h3>
+        <p>Difícil de somar, fácil de errar e impossível de consultar depois.</p>
+      </div>
+      <div class="problema-card">
+        <div class="icon">🔢</div>
+        <h3>Calculadora manual</h3>
+        <p>Demora mais no caixa, cliente espera e você ainda pode errar o troco.</p>
+      </div>
+      <div class="problema-card">
+        <div class="icon">📦</div>
+        <h3>Estoque no olho</h3>
+        <p>Não sabe quando produto vai acabar e acaba perdendo venda ou comprando em excesso.</p>
+      </div>
+      <div class="problema-card">
+        <div class="icon">📊</div>
+        <h3>Sem relatório de vendas</h3>
+        <p>Não sabe qual produto mais vende, qual dia fatura mais nem quanto entrou no mês.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCIONALIDADES -->
+<section class="funcionalidades" id="funcionalidades">
+  <div class="container">
+    <h2 class="section-title">Tudo que você precisa em um sistema</h2>
+    <p class="section-sub">Desenvolvido especialmente para quitandas, hortifrutis e mercadinhos.</p>
+    <div class="funcionalidades-grid">
+      <div class="func-card">
+        <div class="func-icon">🛒</div>
+        <h3>Caixa rápido</h3>
+        <p>Registre vendas por código de barras ou busca pelo nome. Calcula o total e o troco automaticamente.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">⚖️</div>
+        <h3>Balança integrada</h3>
+        <p>Conecta diretamente com a balança. O peso entra sozinho na venda, sem digitar nada.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">🖨️</div>
+        <h3>Impressora de cupom</h3>
+        <p>Imprime cupom fiscal no cliente na hora. Funciona com impressoras térmicas comuns.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">📦</div>
+        <h3>Controle de estoque</h3>
+        <p>Avisa quando produto está acabando. Controla quantidade e data de validade.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">💳</div>
+        <h3>Múltiplas formas de pagamento</h3>
+        <p>Dinheiro, PIX, débito e crédito. O sistema registra tudo separado para facilitar o fechamento.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">📊</div>
+        <h3>Relatórios de vendas</h3>
+        <p>Veja o faturamento por dia, semana ou mês. Produtos mais vendidos e desempenho por operador.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">🚚</div>
+        <h3>Cadastro de fornecedores</h3>
+        <p>Guarda contatos dos fornecedores para facilitar os pedidos de reposição.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">💰</div>
+        <h3>Contas a pagar e receber</h3>
+        <p>Controle de vencimentos para não perder prazo de pagamento nem esquecer uma cobrança.</p>
+      </div>
+      <div class="func-card">
+        <div class="func-icon">👥</div>
+        <h3>Múltiplos operadores</h3>
+        <p>Cada atendente tem seu próprio acesso. Administrador vê o relatório de cada um.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HARDWARE -->
+<section class="hardware">
+  <div class="container">
+    <h2 class="section-title">Compatível com os equipamentos mais usados</h2>
+    <p class="section-sub">Integração nativa. Plug and play.</p>
+    <div class="hardware-grid">
+      <div class="hw-card">
+        <div class="icon">⚖️</div>
+        <h3>Balança Elgin DP-30t</h3>
+        <p>Conexão serial. Peso capturado automaticamente.</p>
+      </div>
+      <div class="hw-card">
+        <div class="icon">🖨️</div>
+        <h3>Impressora Epson TM-T20x</h3>
+        <p>Cupom térmico USB. Impressão rápida.</p>
+      </div>
+      <div class="hw-card">
+        <div class="icon">💵</div>
+        <h3>Gaveta Bematech GD-5</h3>
+        <p>Abre automaticamente a cada venda finalizada.</p>
+      </div>
+      <div class="hw-card">
+        <div class="icon">🔍</div>
+        <h3>Leitor de código de barras</h3>
+        <p>Qualquer leitor USB. Reconhecimento instantâneo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PREÇOS -->
+<section class="precos" id="precos">
+  <div class="container">
+    <h2 class="section-title">Planos e preços</h2>
+    <p class="section-sub">Sem mensalidade surpresa. Sem internet obrigatória. Sem complicação.</p>
+    <div class="precos-grid">
+
+<div class="preco-card destaque">
+        <span class="badge-destaque">Mais escolhido</span>
+        <h3>Instalação + Suporte</h3>
+        <div class="preco-valor"><sup>R$</sup>500</div>
+        <div class="preco-periodo">na instalação + R$&nbsp;100/mês</div>
+        <ul class="preco-lista">
+          <li><span class="check">✓</span> Sistema completo instalado</li>
+          <li><span class="check">✓</span> Treinamento presencial (1h)</li>
+          <li><span class="check">✓</span> Configuração de hardware</li>
+          <li><span class="check">✓</span> Suporte mensal por WhatsApp</li>
+          <li><span class="check">✓</span> Atualizações incluídas</li>
+          <li><span class="check">✓</span> Backup dos dados assistido</li>
+        </ul>
+        <a href="#contato" class="btn-contato verde">Quero esse plano</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- DEPOIMENTO (espaço reservado) -->
+<section>
+  <div class="container">
+    <h2 class="section-title">O que dizem os clientes</h2>
+    <p class="section-sub">Resultado real de quem já usa.</p>
+    <div class="depoimento-box">
+      "Antes eu anotava tudo no caderno e no final do dia ficava somando na calculadora. Agora fecho o caixa em 5 minutos e sei exatamente quanto vendi em cada produto. Valeu cada centavo."
+      <div class="autor">— Dono de quitanda, bairro Jardim das Acácias</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTATO -->
+<section class="contato" id="contato">
+  <div class="container">
+    <h2>Pronto para organizar seu negócio?</h2>
+    <p>Entre em contato agora e agende uma demonstração gratuita.</p>
+    <a
+      href="https://wa.me/5511970859747?text=Ol%C3%A1%2C%20vi%20o%20sistema%20PDV%20para%20quitanda%20e%20quero%20saber%20mais!"
+      class="whatsapp-btn"
+      target="_blank"
+      rel="noopener"
+    >
+      💬 Chamar no WhatsApp
+    </a>
+    <div class="footer-note">
+      Sistema rodando localmente no seu PC. Sem mensalidade de servidor. Seus dados são seus.
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

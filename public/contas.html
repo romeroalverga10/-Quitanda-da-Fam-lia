@@ -6,6 +6,15 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+<script>
+  (async () => {
+    try {
+      const res = await fetch('/api/operador-atual').then(r => r.json());
+      const perfil = res.operador?.perfil || localStorage.getItem('perfil') || 'operador';
+      if (perfil !== 'admin') { alert('Acesso restrito ao administrador.'); location.href = '/pdv.html'; }
+    } catch { if (localStorage.getItem('perfil') !== 'admin') { location.href = '/pdv.html'; } }
+  })();
+</script>
 
 <header class="header">
   <h1>🛒 Quitanda da Família</h1>

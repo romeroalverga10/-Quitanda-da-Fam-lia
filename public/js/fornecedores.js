@@ -133,8 +133,8 @@ async function reativarFornecedor(id) {
   await recarregar();
 }
 
-document.getElementById('modalFornecedor').addEventListener('click', function(e) {
-  if (e.target === this) fecharModal('modalFornecedor');
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') fecharModal('modalFornecedor');
 });
 
 init();

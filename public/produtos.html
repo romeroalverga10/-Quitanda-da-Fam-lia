@@ -2,14 +2,45 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Produtos — Quitanda da Família</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { background: #fff !important; }
+      header, .toolbar, .btn, .card > *:not(table), .item-acoes, #busca, #filtroCategoria { display: none !important; }
+      .card { box-shadow: none !important; padding: 0 !important; }
+      #tabelaProdutos { width: 100%; border-collapse: collapse; font-size: 20pt; }
+      #tabelaProdutos th { background: #f4978e !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 4px 8px; text-align: left; }
+      #tabelaProdutos td { padding: 3px 8px; border-bottom: 1px solid #f4c5c1; }
+      #tabelaProdutos tr:nth-child(even) td { background: #fef0ee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-header h2 { color: #e8735a !important; }
+      #tabelaProdutos th:nth-child(n+3),
+      #tabelaProdutos td:nth-child(n+3) { display: none !important; }
+      #tabelaProdutos th:nth-child(2) { width: 80px; }
+      #tabelaProdutos th:nth-child(1) { width: auto; }
+      .print-header { display: block !important; text-align: center; margin-bottom: 12px; }
+      .print-header h2 { font-size: 30pt; color: #e8735a !important; font-weight: bold; }
+    }
+    .print-header { display: none; }
+  </style>
 </head>
 <body>
+<script>
+  (async () => {
+    try {
+      const res = await fetch('/api/operador-atual').then(r => r.json());
+      const perfil = res.operador?.perfil || localStorage.getItem('perfil') || 'operador';
+      if (perfil !== 'admin') { alert('Acesso restrito ao administrador.'); location.href = '/pdv.html'; }
+    } catch { if (localStorage.getItem('perfil') !== 'admin') { location.href = '/pdv.html'; } }
+  })();
+</script>
 
 <header class="header">
   <h1>🛒 Quitanda da Família</h1>
   <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/validade.html'">⏰ Validade</button>
     <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
   </div>
 </header>
@@ -21,6 +52,8 @@
       <option value="">Todas as categorias</option>
     </select>
     <button class="btn btn-verde" onclick="abrirModalNovo()">+ Novo Produto</button>
+    <button class="btn btn-cinza" onclick="abrirModalCategorias()">🏷️ Categorias</button>
+    <button class="btn" onclick="imprimirTabela()" style="background:#555;color:#fff">🖨️ Imprimir Tabela</button>
   </div>
 
   <div class="card">
@@ -35,6 +68,7 @@
           <th>Estoque</th>
           <th>Mín.</th>
           <th>Validade</th>
+          <th>NCM</th>
           <th style="width:100px">Ações</th>
         </tr>
       </thead>
@@ -50,28 +84,28 @@
       <h2 id="modalTitulo">Novo Produto</h2>
       <button class="modal-fechar" onclick="fecharModal()">×</button>
     </div>
-    <form id="formProduto" onsubmit="salvarProduto(event)">
+    <form id="formProduto" onsubmit="return false">
       <input type="hidden" id="prodId">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-group" style="grid-column:1/-1">
-          <label>Nome *</label>
-          <input type="text" id="pNome" required>
+          <label>Nome</label>
+          <input type="text" id="pNome">
         </div>
         <div class="form-group">
           <label>Código de Barras</label>
           <input type="text" id="pCodigo">
         </div>
         <div class="form-group">
-          <label>Categoria *</label>
-          <select id="pCategoria" required onchange="toggleValidade()"></select>
+          <label>Categoria</label>
+          <select id="pCategoria" onchange="toggleValidade()"></select>
         </div>
         <div class="form-group">
-          <label>Preço de Venda (R$) *</label>
-          <input type="number" id="pPreco" step="0.01" min="0.01" required>
+          <label>Preço de Venda (R$)</label>
+          <input type="number" id="pPreco" step="0.01" min="0" value="0">
         </div>
         <div class="form-group">
-          <label>Unidade *</label>
-          <select id="pUnidade" required>
+          <label>Unidade</label>
+          <select id="pUnidade">
             <option value="unidade">Unidade</option>
             <option value="kg">Kg (pesado)</option>
             <option value="litro">Litro</option>
@@ -91,15 +125,57 @@
           <label>Data de Validade</label>
           <input type="date" id="pValidade">
         </div>
+        <div class="form-group">
+          <label>NCM <span style="font-size:11px;color:#888">(recomendado para NFC-e)</span></label>
+          <input type="text" id="pNCM" maxlength="8" placeholder="00000000">
+        </div>
+        <div class="form-group">
+          <label>Origem</label>
+          <select id="pOrigem">
+            <option value="0">0 — Nacional</option>
+            <option value="1">1 — Estrangeira importação direta</option>
+            <option value="2">2 — Estrangeira adquirida no mercado interno</option>
+          </select>
+        </div>
       </div>
       <div class="d-flex gap-8 mt-16">
         <button type="button" class="btn btn-cinza" style="flex:1" onclick="fecharModal()">Cancelar</button>
-        <button type="submit" class="btn btn-verde" style="flex:2">Salvar Produto</button>
+        <button type="button" class="btn btn-verde" style="flex:2" onclick="salvarProduto()">Salvar Produto</button>
       </div>
     </form>
   </div>
 </div>
 
-<script src="/js/produtos.js"></script>
+<!-- ── MODAL CATEGORIAS ───────────────────────────────── -->
+<div class="modal-overlay" id="modalCategorias">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <h2>Categorias</h2>
+      <button class="modal-fechar" onclick="document.getElementById('modalCategorias').classList.remove('ativo')">×</button>
+    </div>
+    <div id="listaCategorias" style="margin-bottom:16px;max-height:320px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="novaCatNome" placeholder="Nova categoria..." style="flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px">
+      <button class="btn btn-verde" onclick="criarCategoria()">+ Adicionar</button>
+    </div>
+    <div id="catErro" style="display:none;color:#c62828;font-size:12px;margin-top:6px"></div>
+  </div>
+</div>
+
+<script src="/js/produtos.js?v=3"></script>
+<script>
+function imprimirTabela() {
+  // Insere cabeçalho temporário antes de imprimir
+  const card = document.querySelector('.card');
+  let hdr = document.querySelector('.print-header');
+  if (!hdr) {
+    hdr = document.createElement('div');
+    hdr.className = 'print-header';
+    hdr.innerHTML = `<h2>Quitanda da Família</h2>`;
+    card.insertBefore(hdr, card.firstChild);
+  }
+  window.print();
+}
+</script>
 </body>
 </html>

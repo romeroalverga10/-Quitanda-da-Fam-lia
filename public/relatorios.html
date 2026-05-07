@@ -6,10 +6,20 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+<script>
+  (async () => {
+    try {
+      const res = await fetch('/api/operador-atual').then(r => r.json());
+      const perfil = res.operador?.perfil || localStorage.getItem('perfil') || 'operador';
+      if (perfil !== 'admin') { alert('Acesso restrito ao administrador.'); location.href = '/pdv.html'; }
+    } catch { if (localStorage.getItem('perfil') !== 'admin') { location.href = '/pdv.html'; } }
+  })();
+</script>
 
 <header class="header">
   <h1>🛒 Quitanda da Família</h1>
   <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/fechamento.html'">🏁 Fechamento</button>
     <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
   </div>
 </header>
@@ -17,16 +27,59 @@
 <div class="relatorio-layout">
   <div class="relatorio-header">
     <h2 style="color:var(--verde-escuro)">📊 Relatório de Vendas</h2>
-    <input type="date" id="seletorData" onchange="carregarRelatorio()">
-    <button class="btn btn-verde" onclick="carregarRelatorio()">Consultar</button>
-    <button class="btn btn-cinza" onclick="window.print()">🖨️ Imprimir</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label style="font-size:13px;font-weight:600">De:</label>
+      <input type="date" id="dataInicio">
+      <label style="font-size:13px;font-weight:600">Até:</label>
+      <input type="date" id="dataFim">
+      <label style="font-size:13px;font-weight:600">Operador:</label>
+      <select id="filtroOperador">
+        <option value="">Todos</option>
+      </select>
+      <button class="btn btn-verde" onclick="carregarRelatorio()">Consultar</button>
+      <button class="btn btn-cinza" onclick="abrirImpressao()">🖨️ Imprimir</button>
+    </div>
   </div>
 
-  <div class="cards-resumo">
+  <!-- Modal de seleção de impressão -->
+  <div id="modalImpressao" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:28px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+      <h3 style="margin:0 0 16px;color:var(--verde-escuro)">🖨️ Selecionar o que Imprimir</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="chkResumo" checked style="width:16px;height:16px;accent-color:var(--verde-escuro)">
+          📊 Resumo (totais e formas de pagamento)
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="chkProdutos" checked style="width:16px;height:16px;accent-color:var(--verde-escuro)">
+          📦 Produtos Vendidos no Período
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="chkTop10" checked style="width:16px;height:16px;accent-color:var(--verde-escuro)">
+          🏆 Top 10 Produtos
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+          <input type="checkbox" id="chkOperadores" checked style="width:16px;height:16px;accent-color:var(--verde-escuro)">
+          👤 Vendas por Operador
+        </label>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-cinza" style="flex:1" onclick="fecharImpressao()">Cancelar</button>
+        <button class="btn btn-verde" style="flex:2" onclick="executarImpressao()">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-resumo" id="secResumo">
     <div class="card-resumo">
       <div class="label">Total de Vendas</div>
       <div class="valor" id="totalVendas">—</div>
       <div style="font-size:12px;color:#888;margin-top:4px" id="qtdVendas">0 vendas</div>
+    </div>
+    <div class="card-resumo">
+      <div class="label">Produtos Vendidos</div>
+      <div class="valor" id="qtdProdutos">—</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">itens no período</div>
     </div>
     <div class="card-resumo laranja">
       <div class="label">Dinheiro</div>
@@ -37,13 +90,35 @@
       <div class="valor" id="totalPix">R$ 0,00</div>
     </div>
     <div class="card-resumo laranja">
-      <div class="label">Cartão</div>
-      <div class="valor" id="totalCartao">R$ 0,00</div>
+      <div class="label">Débito</div>
+      <div class="valor" id="totalDebito">R$ 0,00</div>
+    </div>
+    <div class="card-resumo laranja">
+      <div class="label">Crédito</div>
+      <div class="valor" id="totalCredito">R$ 0,00</div>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-    <div class="secao-rel card">
+  <div class="secao-rel card" id="secProdutos" style="margin-bottom:16px">
+    <h3>📦 Produtos Vendidos no Período</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Categoria</th>
+          <th>Preço Unit.</th>
+          <th>Qtd Vendida</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody id="corpoProdutosVendidos">
+        <tr><td colspan="5" class="text-center" style="color:#aaa">Nenhum dado</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="secGrid">
+    <div class="secao-rel card" id="secTop10">
       <h3>🏆 Top 10 Produtos</h3>
       <table id="tabelaTop10">
         <thead>
@@ -60,7 +135,7 @@
       </table>
     </div>
 
-    <div class="secao-rel card">
+    <div class="secao-rel card" id="secOperadores">
       <h3>👤 Vendas por Operador</h3>
       <table id="tabelaOperadores">
         <thead>
@@ -78,6 +153,77 @@
   </div>
 </div>
 
+<style>
+  @media print {
+    header, .relatorio-header, #modalImpressao { display: none !important; }
+    .ocultar-impressao { display: none !important; }
+    body { background: white; }
+    .card { box-shadow: none; border: 1px solid #ccc; }
+    #secGrid { display: grid !important; grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
 <script src="/js/relatorios.js"></script>
+<script>
+  function abrirImpressao() {
+    document.getElementById('modalImpressao').style.display = 'flex';
+  }
+  function fecharImpressao() {
+    document.getElementById('modalImpressao').style.display = 'none';
+  }
+
+  function executarImpressao() {
+    const chkResumo     = document.getElementById('chkResumo').checked;
+    const chkProdutos   = document.getElementById('chkProdutos').checked;
+    const chkTop10      = document.getElementById('chkTop10').checked;
+    const chkOperadores = document.getElementById('chkOperadores').checked;
+
+    fecharImpressao();
+
+    let conteudo = '';
+    if (chkResumo)     conteudo += document.getElementById('secResumo').outerHTML;
+    if (chkProdutos)   conteudo += '<div style="margin-top:16px">' + document.getElementById('secProdutos').outerHTML + '</div>';
+    if (chkTop10 || chkOperadores) {
+      conteudo += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
+      if (chkTop10)      conteudo += document.getElementById('secTop10').outerHTML;
+      if (chkOperadores) conteudo += document.getElementById('secOperadores').outerHTML;
+      conteudo += '</div>';
+    }
+
+    const win = window.open('', '_blank', 'width=900,height=750');
+    win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head>
+      <meta charset="UTF-8">
+      <title>Relatório — Quitanda da Família</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background:#fff; padding:20px; font-family:Arial,sans-serif; font-size:13px; color:#222; }
+        h2 { color:#E8816D; margin-bottom:16px; font-size:18px; }
+        h3 { color:#E8816D; margin-bottom:10px; font-size:14px; }
+        .cards-resumo { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:16px; }
+        .card-resumo { border:1px solid #c8e6c9; border-radius:8px; padding:12px; text-align:center; background:#f9fbe7; }
+        .card-resumo.laranja { background:#fff8e1; border-color:#ffe082; }
+        .card-resumo .label { font-size:11px; color:#555; margin-bottom:4px; font-weight:600; text-transform:uppercase; }
+        .card-resumo .valor { font-size:16px; font-weight:700; color:#E8816D; }
+        .card-resumo.laranja .valor { color:#e65100; }
+        .secao-rel { border:1px solid #ddd; border-radius:8px; padding:14px; background:#fff; }
+        table { width:100%; border-collapse:collapse; margin-top:8px; }
+        th { background:#e8f5e9; color:#E8816D; font-size:12px; padding:6px 8px; text-align:left; border-bottom:2px solid #c8e6c9; }
+        td { padding:5px 8px; border-bottom:1px solid #f0f0f0; font-size:12px; }
+        tr:last-child td { border-bottom:none; }
+        @media print { body { padding:8px; } }
+      </style>
+    </head><body>
+      <h2>📊 Relatório de Vendas — Quitanda da Família</h2>
+      ${conteudo}
+      <script>
+        window.onload = function() {
+          setTimeout(function() { window.print(); }, 400);
+          window.onafterprint = function() { window.close(); };
+        };
+      <\/script>
+    </body></html>`);
+    win.document.close();
+  }
+</script>
 </body>
 </html>

@@ -34,7 +34,7 @@ function filtrar() {
 function renderTabela(lista) {
   const tbody = document.getElementById('corpoProdutos');
   if (!lista.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="color:#aaa;padding:20px">Nenhum produto encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="color:#aaa;padding:20px">Nenhum produto encontrado.</td></tr>';
     return;
   }
   tbody.innerHTML = lista.map(p => {
@@ -43,8 +43,15 @@ function renderTabela(lista) {
     else if (p.estoque_baixo) cls = 'linha-alerta-estoque';
     const valStr = p.data_validade ? formatarDataBR(p.data_validade) : '—';
     const diasStr = p.validade_dias !== null
-      ? (p.validade_dias < 0 ? ' <span style="color:red">(VENCIDO)</span>' : p.validade_dias <= 3 ? ` <span style="color:#f57c00">(${p.validade_dias}d)</span>` : '')
+      ? (p.validade_dias < 0
+          ? ' <span style="color:red">(VENCIDO)</span>'
+          : p.validade_dias <= 3
+            ? ` <span style="color:#f57c00">(${p.validade_dias}d)</span>`
+            : '')
       : '';
+    const ncmBadge = p.ncm
+      ? `<span style="font-size:11px;color:#555">${p.ncm}</span>`
+      : `<span style="font-size:11px;background:#fff3e0;color:#e65100;padding:1px 6px;border-radius:4px">Sem NCM</span>`;
     return `
       <tr class="${cls}">
         <td>${p.nome}</td>
@@ -55,6 +62,7 @@ function renderTabela(lista) {
         <td>${p.estoque_atual}${p.estoque_baixo ? ' ⚠️' : ''}</td>
         <td>${p.estoque_minimo}</td>
         <td>${valStr}${diasStr}</td>
+        <td>${ncmBadge}</td>
         <td>
           <button class="btn btn-verde btn-sm" onclick="editarProduto(${p.id})">✏️</button>
           <button class="btn btn-vermelho btn-sm" onclick="excluirProduto(${p.id})">🗑️</button>
@@ -89,48 +97,64 @@ function editarProduto(id) {
   document.getElementById('pEstoqueAtual').value = p.estoque_atual;
   document.getElementById('pEstoqueMin').value = p.estoque_minimo;
   document.getElementById('pValidade').value = p.data_validade || '';
+  document.getElementById('pNCM').value = p.ncm || '';
+  document.getElementById('pOrigem').value = p.origem || 0;
   toggleValidade();
   document.getElementById('modalProduto').classList.add('ativo');
 }
 
 async function salvarProduto(e) {
-  e.preventDefault();
+  if (e && e.preventDefault) e.preventDefault();
   const id = document.getElementById('prodId').value;
   const catId = document.getElementById('pCategoria').value;
-  const catNome = categorias.find(c => String(c.id) === String(catId))?.nome || '';
 
   const payload = {
-    nome: document.getElementById('pNome').value,
+    nome: document.getElementById('pNome').value.trim(),
     codigo_barras: document.getElementById('pCodigo').value || null,
-    categoria_id: catId,
-    preco: parseFloat(document.getElementById('pPreco').value),
-    unidade: document.getElementById('pUnidade').value,
+    categoria_id: catId || 1,
+    preco: parseFloat(document.getElementById('pPreco').value) || 0,
+    unidade: document.getElementById('pUnidade').value || 'unidade',
     estoque_atual: parseFloat(document.getElementById('pEstoqueAtual').value) || 0,
     estoque_minimo: parseFloat(document.getElementById('pEstoqueMin').value) || 0,
-    data_validade: CATS_VALIDADE.includes(catNome) ? (document.getElementById('pValidade').value || null) : null
+    data_validade: document.getElementById('pValidade').value || null,
+    ncm: document.getElementById('pNCM').value || null,
+    origem: parseInt(document.getElementById('pOrigem').value) || 0,
   };
+
+  if (!payload.nome) { alert('Digite o nome do produto.'); return; }
 
   const url = id ? `/api/produtos/${id}` : '/api/produtos';
   const method = id ? 'PUT' : 'POST';
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).then(r => r.json());
+
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+  } catch (err) {
+    alert('Erro: ' + err.message);
+    return;
+  }
 
   if (res.ok || res.id) {
     toast(id ? 'Produto atualizado!' : 'Produto cadastrado!', 'sucesso');
     fecharModal();
     await recarregar();
   } else {
-    toast(res.erro || 'Erro ao salvar', 'erro');
+    alert('Erro ao salvar: ' + (res.erro || JSON.stringify(res)));
   }
 }
 
 async function excluirProduto(id) {
   if (!confirm('Excluir este produto?')) return;
-  await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
-  toast('Produto excluído', 'sucesso');
+  const res = await fetch(`/api/produtos/${id}`, { method: 'DELETE' }).then(r => r.json());
+  if (res.desativado) {
+    toast(res.msg, 'aviso');
+  } else {
+    toast('Produto excluído', 'sucesso');
+  }
   await recarregar();
 }
 
@@ -140,10 +164,7 @@ async function recarregar() {
 }
 
 function toggleValidade() {
-  const catId = document.getElementById('pCategoria').value;
-  const catNome = categorias.find(c => String(c.id) === String(catId))?.nome || '';
-  const campo = document.getElementById('campoValidade');
-  campo.style.display = CATS_VALIDADE.includes(catNome) ? 'block' : 'none';
+  document.getElementById('campoValidade').style.display = 'block';
 }
 
 function fecharModal() {
@@ -163,8 +184,90 @@ function toast(msg, tipo) {
   setTimeout(() => el.remove(), 3000);
 }
 
-document.getElementById('modalProduto').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('modalProduto')) fecharModal();
+async function abrirModalCategorias() {
+  await renderCategorias();
+  document.getElementById('novaCatNome').value = '';
+  document.getElementById('catErro').style.display = 'none';
+  document.getElementById('modalCategorias').classList.add('ativo');
+}
+
+async function renderCategorias() {
+  const cats = await fetch('/api/produtos/categorias').then(r => r.json());
+  const div = document.getElementById('listaCategorias');
+  if (!cats.length) { div.innerHTML = '<p style="color:#aaa;font-size:13px">Nenhuma categoria.</p>'; return; }
+  div.innerHTML = cats.map(c => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 4px;border-bottom:1px solid #f0f0f0">
+      <span style="font-size:14px">${c.nome}</span>
+      <button class="btn btn-vermelho btn-sm" onclick="deletarCategoria(${c.id}, '${c.nome.replace(/'/g, "\\'")}')">🗑️</button>
+    </div>`).join('');
+}
+
+async function criarCategoria() {
+  const nome = document.getElementById('novaCatNome').value.trim();
+  const erroEl = document.getElementById('catErro');
+  if (!nome) { erroEl.textContent = 'Digite um nome.'; erroEl.style.display = 'block'; return; }
+  const res = await fetch('/api/produtos/categorias', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nome }),
+  }).then(r => r.json());
+  if (res.ok) {
+    document.getElementById('novaCatNome').value = '';
+    erroEl.style.display = 'none';
+    await renderCategorias();
+    await recarregarCategorias();
+  } else {
+    erroEl.textContent = res.erro || 'Erro ao criar.';
+    erroEl.style.display = 'block';
+  }
+}
+
+async function deletarCategoria(id, nome) {
+  if (!confirm(`Excluir a categoria "${nome}"?\n\nSó é possível se não houver produtos nela.`)) return;
+  const res = await fetch(`/api/produtos/categorias/${id}`, { method: 'DELETE' }).then(r => r.json());
+  if (res.ok) {
+    await renderCategorias();
+    await recarregarCategorias();
+  } else {
+    alert(res.erro || 'Erro ao excluir.');
+  }
+}
+
+async function zerarEstoque() {
+  if (!confirm('Zerar o estoque de TODOS os produtos?\n\nEsta ação define estoque_atual = 0 em todos os produtos. Não afeta vendas nem NFC-e.\n\nContinuar?')) return;
+  const res = await fetch('/api/produtos/zerar-estoque', { method: 'POST' }).then(r => r.json());
+  if (res.ok) {
+    toast(`Estoque zerado — ${res.total} produto(s) atualizados.`, 'sucesso');
+    await recarregar();
+  } else {
+    toast('Erro ao zerar estoque.', 'erro');
+  }
+}
+
+async function recarregarCategorias() {
+  const cats = await fetch('/api/produtos/categorias').then(r => r.json());
+  categorias = cats;
+  const selCat = document.getElementById('filtroCategoria');
+  const pCat = document.getElementById('pCategoria');
+  selCat.innerHTML = '<option value="">Todas as categorias</option>';
+  pCat.innerHTML = '';
+  cats.forEach(c => {
+    selCat.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+    pCat.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+  });
+}
+
+// Fechar modal só com ESC — clique fora não fecha
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    fecharModal();
+    document.getElementById('modalCategorias').classList.remove('ativo');
+  }
+});
+
+// Scanner manda Enter no campo código — impede submeter o form
+document.getElementById('pCodigo').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') e.preventDefault();
 });
 
 init();

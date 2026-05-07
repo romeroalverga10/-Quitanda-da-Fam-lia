@@ -1,6 +1,8 @@
 const db = require('../database/db');
 const router = require('express').Router();
 
+const err = (res, e) => res.json({ ok: false, erro: e.message || 'Erro interno' });
+
 router.get('/', (req, res) => {
   const busca = req.query.busca ? `%${req.query.busca}%` : '%%';
   const rows = db.all(
@@ -21,31 +23,39 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   const { nome, cnpj_cpf, telefone, email, endereco, observacoes } = req.body;
   if (!nome) return res.status(400).json({ erro: 'Nome é obrigatório' });
-  const r = db.run(
-    'INSERT INTO fornecedores (nome,cnpj_cpf,telefone,email,endereco,observacoes,ativo) VALUES(?,?,?,?,?,?,1)',
-    [nome, cnpj_cpf || null, telefone || null, email || null, endereco || null, observacoes || null]
-  );
-  res.json({ ok: true, id: Number(r.lastInsertRowid) });
+  try {
+    const r = db.run(
+      'INSERT INTO fornecedores (nome,cnpj_cpf,telefone,email,endereco,observacoes,ativo) VALUES(?,?,?,?,?,?,1)',
+      [nome, cnpj_cpf || null, telefone || null, email || null, endereco || null, observacoes || null]
+    );
+    res.json({ ok: true, id: Number(r.lastInsertRowid) });
+  } catch (e) { err(res, e); }
 });
 
 router.put('/:id/reativar', (req, res) => {
-  db.run('UPDATE fornecedores SET ativo=1 WHERE id=?', req.params.id);
-  res.json({ ok: true });
+  try {
+    db.run('UPDATE fornecedores SET ativo=1 WHERE id=?', req.params.id);
+    res.json({ ok: true });
+  } catch (e) { err(res, e); }
 });
 
 router.put('/:id', (req, res) => {
   const { nome, cnpj_cpf, telefone, email, endereco, observacoes } = req.body;
   if (!nome) return res.status(400).json({ erro: 'Nome é obrigatório' });
-  db.run(
-    'UPDATE fornecedores SET nome=?,cnpj_cpf=?,telefone=?,email=?,endereco=?,observacoes=? WHERE id=?',
-    [nome, cnpj_cpf || null, telefone || null, email || null, endereco || null, observacoes || null, req.params.id]
-  );
-  res.json({ ok: true });
+  try {
+    db.run(
+      'UPDATE fornecedores SET nome=?,cnpj_cpf=?,telefone=?,email=?,endereco=?,observacoes=? WHERE id=?',
+      [nome, cnpj_cpf || null, telefone || null, email || null, endereco || null, observacoes || null, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (e) { err(res, e); }
 });
 
 router.delete('/:id', (req, res) => {
-  db.run('UPDATE fornecedores SET ativo=0 WHERE id=?', req.params.id);
-  res.json({ ok: true });
+  try {
+    db.run('UPDATE fornecedores SET ativo=0 WHERE id=?', req.params.id);
+    res.json({ ok: true });
+  } catch (e) { err(res, e); }
 });
 
 module.exports = router;

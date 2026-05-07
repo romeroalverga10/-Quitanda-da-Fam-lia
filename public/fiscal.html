@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Configuração Fiscal — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { background: #f5f5f5; font-family: sans-serif; padding: 24px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { color: #E8816D; margin-bottom: 4px; }
+    .subtitle { color: #777; margin-bottom: 24px; font-size: 14px; }
+    .card { background: #fff; border-radius: 10px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .card h2 { margin: 0 0 16px; font-size: 16px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .span2 { grid-column: span 2; }
+    label { display: block; font-size: 12px; color: #666; margin-bottom: 3px; margin-top: 8px; }
+    input, select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    input:focus, select:focus { outline: none; border-color: #E8816D; box-shadow: 0 0 0 2px rgba(46,125,50,.15); }
+    .badge-cert { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+    .cert-ok { background: #e8f5e9; color: #E8816D; }
+    .cert-nok { background: #ffebee; color: #D4705C; }
+    .btn-row { display: flex; gap: 12px; margin-top: 20px; }
+    .btn { padding: 10px 22px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
+    .btn-verde { background: #E8816D; color: #fff; }
+    .btn-verde:hover { background: #C4614E; }
+    .btn-cinza { background: #eee; color: #444; }
+    .btn-cinza:hover { background: #ddd; }
+    .btn-azul { background: #1565c0; color: #fff; }
+    .btn-azul:hover { background: #0d47a1; }
+    .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; font-size: 14px; color: #fff; z-index: 9999; }
+    .toast.sucesso { background: #E8816D; }
+    .toast.erro    { background: #D4705C; }
+    .toast.aviso   { background: #f57c00; }
+    .nfce-lista { margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #f5f5f5; padding: 8px; text-align: left; }
+    td { padding: 7px 8px; border-bottom: 1px solid #f0f0f0; }
+    .status-autorizada { color: #E8816D; font-weight: bold; }
+    .status-rejeitada { color: #D4705C; }
+    .status-pendente { color: #f57c00; }
+    .status-erro { color: #9e9e9e; }
+    .status-cancelada { color: #9e9e9e; text-decoration: line-through; }
+    .status-contingencia { color: #7b1fa2; font-weight: bold; }
+    .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center; }
+    .modal-overlay.ativo { display:flex; }
+    .modal { background:#fff;border-radius:12px;padding:28px;width:420px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.2); }
+    .modal h3 { margin:0 0 12px;color:#c62828; }
+    .modal textarea { width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:vertical;min-height:72px; }
+    .modal .btn-row { margin-top:16px;display:flex;gap:10px;justify-content:flex-end; }
+  </style>
+</head>
+<body>
+<!-- Modal cancelamento -->
+<div class="modal-overlay" id="modalCancelar">
+  <div class="modal">
+    <h3>🚫 Cancelar NFC-e</h3>
+    <p style="font-size:13px;color:#555;margin:0 0 10px">Esta ação é <strong>irreversível</strong> e será registrada na SEFAZ. Informe a justificativa (mínimo 15 caracteres).</p>
+    <textarea id="cancelJust" placeholder="Ex: Cancelamento de nota de teste emitida em produção"></textarea>
+    <div id="cancelErro" style="display:none;color:#c62828;font-size:12px;margin-top:6px"></div>
+    <div class="btn-row">
+      <button class="btn btn-cinza" onclick="fecharModalCancelar()">Voltar</button>
+      <button class="btn" style="background:#c62828;color:#fff" onclick="confirmarCancelamento()">Confirmar Cancelamento</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+    <button class="btn btn-cinza" onclick="history.back()" style="padding:6px 14px;font-size:13px">← Voltar</button>
+    <h1>⚙️ Configuração Fiscal NFC-e</h1>
+  </div>
+  <div class="subtitle">Configure os dados fiscais para emissão de NFC-e modelo 65 — SEFAZ-SP</div>
+
+  <!-- Dados da empresa -->
+  <div class="card">
+    <h2>🏢 Dados da Empresa</h2>
+    <div class="grid2">
+      <div>
+        <label>CNPJ *</label>
+        <input id="cnpj" placeholder="00.000.000/0000-00" maxlength="18">
+      </div>
+      <div>
+        <label>Inscrição Estadual *</label>
+        <input id="ie" placeholder="000.000.000.000">
+      </div>
+      <div class="span2">
+        <label>Razão Social *</label>
+        <input id="razao_social" placeholder="Nome completo da empresa">
+      </div>
+      <div>
+        <label>Nome Fantasia</label>
+        <input id="fantasia" placeholder="Nome fantasia (exibido no cupom)">
+      </div>
+      <div>
+        <label>Telefone</label>
+        <input id="telefone" placeholder="(11) 99999-9999">
+      </div>
+    </div>
+  </div>
+
+  <!-- Endereço -->
+  <div class="card">
+    <h2>📍 Endereço</h2>
+    <div class="grid2">
+      <div class="span2">
+        <label>Logradouro *</label>
+        <input id="logradouro" placeholder="Rua, Avenida...">
+      </div>
+      <div>
+        <label>Número</label>
+        <input id="numero" placeholder="123 ou SN">
+      </div>
+      <div>
+        <label>Complemento</label>
+        <input id="complemento" placeholder="Apto, Sala...">
+      </div>
+      <div>
+        <label>Bairro</label>
+        <input id="bairro">
+      </div>
+      <div>
+        <label>CEP</label>
+        <input id="cep" placeholder="00000-000" maxlength="9">
+      </div>
+      <div>
+        <label>Município</label>
+        <input id="municipio" placeholder="São Paulo">
+      </div>
+      <div>
+        <label>Código IBGE do Município *</label>
+        <input id="cod_municipio" placeholder="3550308 (São Paulo)" maxlength="7">
+      </div>
+      <div>
+        <label>UF</label>
+        <select id="uf">
+          <option value="SP">SP</option>
+          <option value="RJ">RJ</option>
+          <option value="MG">MG</option>
+        </select>
+      </div>
+      <div>
+        <label>Regime Tributário (CRT)</label>
+        <select id="crt">
+          <option value="1">1 — Simples Nacional</option>
+          <option value="2">2 — Lucro Presumido</option>
+          <option value="3">3 — Lucro Real</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEFAZ -->
+  <div class="card">
+    <h2>🔐 SEFAZ-SP</h2>
+    <div class="grid2">
+      <div>
+        <label>CSC (Código de Segurança do Contribuinte) *</label>
+        <input id="csc" placeholder="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" type="password" autocomplete="off">
+      </div>
+      <div>
+        <label>ID Token (csc_id) *</label>
+        <input id="csc_id" placeholder="000001" maxlength="6">
+      </div>
+      <div style="grid-column:span 2;margin-top:4px">
+        <button class="btn btn-azul" onclick="testarCSC()" id="btnTestarCsc" style="width:100%;margin-top:4px">
+          🔍 Testar CSC na SEFAZ
+        </button>
+        <div id="resultadoCSC" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+      </div>
+      <div>
+        <label>Ambiente</label>
+        <select id="ambiente">
+          <option value="2">2 — Homologação (testes)</option>
+          <option value="1">1 — Produção</option>
+        </select>
+      </div>
+      <div>
+        <label>Série NFC-e</label>
+        <input id="serie" type="number" min="1" max="999" value="1">
+      </div>
+      <div>
+        <label>Número atual (próxima NFC-e)</label>
+        <input id="nnf_atual" type="number" min="0" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- Certificado -->
+  <div class="card">
+    <h2>📜 Certificado Digital A1</h2>
+    <div id="statusCert" style="margin-bottom:12px">
+      <span class="badge-cert cert-nok" id="badgeCert">Não configurado</span>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>Arquivo .pfx</label>
+        <input type="file" id="arquivoCert" accept=".pfx,.p12">
+      </div>
+      <div>
+        <label>Senha do certificado</label>
+        <input type="password" id="cert_senha" placeholder="Senha do .pfx" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-azul" onclick="enviarCertificado()">📤 Enviar Certificado</button>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-verde" onclick="salvarConfig()">💾 Salvar Configurações</button>
+    <button class="btn btn-cinza" onclick="location.href='/'">Cancelar</button>
+  </div>
+
+  <!-- Inutilização de Numeração -->
+  <div class="card" style="margin-top:24px">
+    <h2>🗑️ Inutilização de Numeração</h2>
+    <p style="font-size:13px;color:#666;margin:0 0 12px">Use quando números de NFC-e foram consumidos sem autorização (erros de schema, quedas de sistema, etc.) e precisam ser formalmente inutilizados na SEFAZ.</p>
+    <div class="grid3">
+      <div>
+        <label>Série</label>
+        <input id="inut_serie" type="number" min="1" max="999" placeholder="1">
+      </div>
+      <div>
+        <label>Número Inicial</label>
+        <input id="inut_ini" type="number" min="1" placeholder="52">
+      </div>
+      <div>
+        <label>Número Final</label>
+        <input id="inut_fin" type="number" min="1" placeholder="60">
+      </div>
+      <div class="span2" style="grid-column:span 3">
+        <label>Justificativa (mínimo 15 caracteres)</label>
+        <input id="inut_just" placeholder="Ex: Números inutilizados por falha de comunicação com SEFAZ">
+      </div>
+    </div>
+    <div id="inut_erro" style="display:none;color:#c62828;font-size:12px;margin-top:6px"></div>
+    <div id="inut_ok"   style="display:none;font-size:13px;margin-top:8px;padding:8px 12px;border-radius:6px"></div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn" style="background:#c62828;color:#fff" onclick="inutilizar()">🗑️ Inutilizar na SEFAZ</button>
+    </div>
+    <div id="listaInut" style="margin-top:16px"></div>
+  </div>
+
+  <!-- NFC-es emitidas -->
+  <div class="card" style="margin-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h2 style="margin:0">📋 Últimas NFC-es Emitidas</h2>
+      <button class="btn btn-cinza" style="font-size:12px;padding:6px 14px" onclick="exportarBackup()">
+        💾 Exportar XMLs para disco
+      </button>
+    </div>
+    <div id="msgBackup" style="display:none;font-size:13px;padding:6px 10px;border-radius:6px;margin-bottom:8px"></div>
+    <div id="listaNfce"><div style="color:#aaa;text-align:center;padding:20px">Carregando...</div></div>
+  </div>
+</div>
+
+<script>
+async function carregarConfig() {
+  try {
+    const res = await fetch('/api/fiscal/config').then(r => r.json());
+    const campos = ['cnpj','ie','razao_social','fantasia','logradouro','numero','complemento',
+      'bairro','cep','municipio','cod_municipio','uf','telefone','crt','csc','csc_id',
+      'ambiente','serie','nnf_atual'];
+    campos.forEach(c => {
+      const el = document.getElementById(c);
+      if (el && res[c] != null) el.value = res[c];
+    });
+    const badge = document.getElementById('badgeCert');
+    if (res.tem_certificado) {
+      badge.textContent = '✓ Certificado configurado';
+      badge.className = 'badge-cert cert-ok';
+    } else {
+      badge.textContent = '✗ Nenhum certificado';
+      badge.className = 'badge-cert cert-nok';
+    }
+  } catch (e) {}
+}
+
+async function salvarConfig() {
+  const campos = ['cnpj','ie','razao_social','fantasia','logradouro','numero','complemento',
+    'bairro','cep','municipio','cod_municipio','uf','telefone','crt','csc','csc_id',
+    'ambiente','serie','nnf_atual'];
+  const body = {};
+  campos.forEach(c => { body[c] = document.getElementById(c)?.value || null; });
+  const senha = document.getElementById('cert_senha').value;
+  if (senha) body.cert_senha = senha;
+
+  try {
+    const res = await fetch('/api/fiscal/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(r => r.json());
+    if (res.ok) toast('Configurações salvas!', 'sucesso');
+    else toast('Erro: ' + (res.erro || 'falha'), 'erro');
+  } catch (e) {
+    toast('Erro ao salvar', 'erro');
+  }
+}
+
+async function enviarCertificado() {
+  const arquivo = document.getElementById('arquivoCert').files[0];
+  if (!arquivo) { toast('Selecione o arquivo .pfx', 'aviso'); return; }
+
+  const senha = document.getElementById('cert_senha').value;
+  if (!senha) { toast('Informe a senha do certificado', 'aviso'); return; }
+
+  // Salvar senha junto com o upload
+  await fetch('/api/fiscal/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cert_senha: senha }),
+  });
+
+  const buf = await arquivo.arrayBuffer();
+  try {
+    const res = await fetch('/api/fiscal/config/cert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: buf,
+    }).then(r => r.json());
+    if (res.ok) {
+      toast('Certificado enviado com sucesso!', 'sucesso');
+      const badge = document.getElementById('badgeCert');
+      badge.textContent = '✓ Certificado configurado';
+      badge.className = 'badge-cert cert-ok';
+    } else {
+      toast('Erro: ' + (res.erro || 'falha'), 'erro');
+    }
+  } catch (e) {
+    toast('Erro ao enviar certificado', 'erro');
+  }
+}
+
+function tempoRestanteCancelamento(dataAutorizacao) {
+  if (!dataAutorizacao) return { restante: null, expirado: false };
+  const elapsed = Date.now() - new Date(dataAutorizacao).getTime();
+  const ms = 30 * 60 * 1000 - elapsed;
+  if (ms <= 0) return { restante: null, expirado: true };
+  const min = Math.floor(ms / 60000);
+  const sec = Math.floor((ms % 60000) / 1000);
+  return { restante: `${min}:${String(sec).padStart(2,'0')}`, expirado: false };
+}
+
+async function carregarNfce() {
+  try {
+    const lista = await fetch('/api/fiscal/nfce').then(r => r.json());
+    const div = document.getElementById('listaNfce');
+    if (!lista.length) { div.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Nenhuma NFC-e emitida.</p>'; return; }
+    div.innerHTML = `<table>
+      <thead><tr><th>#NF</th><th>Data</th><th>Venda</th><th>Total</th><th>Status</th><th>Protocolo / Mensagem</th><th></th></tr></thead>
+      <tbody>
+        ${lista.map(n => {
+          const { restante, expirado } = tempoRestanteCancelamento(n.data_autorizacao);
+          let btnCancelar = '';
+          if (n.status === 'autorizada') {
+            if (expirado) {
+              btnCancelar = `<button class="btn" style="padding:4px 10px;font-size:12px;background:#9e9e9e;color:#fff;cursor:not-allowed" disabled title="Prazo de 30 min expirado">🚫 Cancelar (expirado)</button>`;
+            } else if (restante) {
+              btnCancelar = `<button class="btn" style="padding:4px 10px;font-size:12px;background:#c62828;color:#fff" onclick="abrirModalCancelar(${n.id})" title="Cancelar dentro do prazo SEFAZ">🚫 Cancelar (${restante})</button>`;
+            } else {
+              btnCancelar = `<button class="btn" style="padding:4px 10px;font-size:12px;background:#c62828;color:#fff" onclick="abrirModalCancelar(${n.id})">🚫 Cancelar</button>`;
+            }
+          }
+          return `
+          <tr>
+            <td>${String(n.numero).padStart(6,'0')}-${n.serie}</td>
+            <td style="font-size:11px">${new Date(n.data_emissao).toLocaleString('pt-BR')}</td>
+            <td>#${n.venda_id}</td>
+            <td>R$ ${Number(n.total).toFixed(2).replace('.',',')}</td>
+            <td><span class="status-${n.status}">${n.status}</span></td>
+            <td style="font-size:11px">${n.protocolo || n.mensagem || '-'}</td>
+            <td style="white-space:nowrap">
+              ${n.status !== 'autorizada' && n.status !== 'cancelada' ? `<button class="btn btn-azul" style="padding:4px 10px;font-size:12px" onclick="retransmitir(${n.id})">↺ Retransmitir</button>` : ''}
+              ${btnCancelar}
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  } catch (e) {}
+}
+
+async function retransmitir(id) {
+  toast('Retransmitindo...', 'aviso');
+  try {
+    const res = await fetch(`/api/fiscal/nfce/${id}/retransmitir`, { method: 'POST' }).then(r => r.json());
+    if (res.ok || res.jaAutorizada) {
+      toast('NFC-e autorizada! Protocolo: ' + (res.protocolo || ''), 'sucesso');
+    } else {
+      toast('Rejeitada: ' + (res.motivo || res.erro || 'erro'), 'erro');
+    }
+    carregarNfce();
+  } catch (e) {
+    toast('Erro ao retransmitir', 'erro');
+  }
+}
+
+function toast(msg, tipo) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (tipo || '');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+async function testarCSC() {
+  const btn = document.getElementById('btnTestarCsc');
+  const div = document.getElementById('resultadoCSC');
+  btn.disabled = true;
+  btn.textContent = '⏳ Consultando SEFAZ...';
+  div.style.display = 'none';
+
+  // Salva config atual antes de testar para usar os valores do formulário
+  const campos = ['cnpj','ie','razao_social','fantasia','logradouro','numero','complemento',
+    'bairro','cep','municipio','cod_municipio','uf','telefone','crt','csc','csc_id',
+    'ambiente','serie','nnf_atual'];
+  const body = {};
+  campos.forEach(c => { body[c] = document.getElementById(c)?.value || null; });
+  await fetch('/api/fiscal/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  try {
+    const res = await fetch('/api/fiscal/testar-csc', { method: 'POST' }).then(r => r.json());
+    div.style.display = 'block';
+    if (res.ok) {
+      div.style.background = '#e8f5e9';
+      div.style.color = '#1b5e20';
+      div.style.border = '1px solid #a5d6a7';
+      div.innerHTML = `<strong>✅ Conectividade OK</strong> — ${res.mensagem}`
+        + (res.aviso ? `<br><span style="color:#e65100;font-size:12px">⚠️ ${res.aviso}</span>` : '');
+    } else {
+      div.style.background = '#ffebee';
+      div.style.color = '#c62828';
+      div.style.border = '1px solid #ef9a9a';
+      div.innerHTML = `<strong>❌ ${res.etapa === 'formato' ? 'Formato inválido' : 'Erro de conexão'}</strong><br>${res.erro || 'Erro desconhecido.'}`;
+    }
+  } catch (e) {
+    div.style.display = 'block';
+    div.style.background = '#fff3e0';
+    div.style.color = '#e65100';
+    div.style.border = '1px solid #ffcc80';
+    div.innerHTML = '⚠️ Não foi possível conectar à SEFAZ. Verifique a internet e o certificado.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔍 Testar CSC na SEFAZ';
+}
+
+let nfceIdParaCancelar = null;
+
+function abrirModalCancelar(id) {
+  nfceIdParaCancelar = id;
+  document.getElementById('cancelJust').value = '';
+  document.getElementById('cancelErro').style.display = 'none';
+  document.getElementById('modalCancelar').classList.add('ativo');
+}
+
+function fecharModalCancelar() {
+  document.getElementById('modalCancelar').classList.remove('ativo');
+  nfceIdParaCancelar = null;
+}
+
+async function confirmarCancelamento() {
+  const just = document.getElementById('cancelJust').value.trim();
+  const erroEl = document.getElementById('cancelErro');
+  if (just.length < 15) {
+    erroEl.textContent = 'Justificativa deve ter pelo menos 15 caracteres.';
+    erroEl.style.display = 'block';
+    return;
+  }
+  erroEl.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/fiscal/nfce/${nfceIdParaCancelar}/cancelar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ justificativa: just }),
+    }).then(r => r.json());
+
+    fecharModalCancelar();
+    if (res.ok) {
+      toast('NFC-e cancelada! Protocolo: ' + (res.protocolo || ''), 'sucesso');
+    } else {
+      toast('Rejeição SEFAZ: ' + (res.motivo || res.erro || 'erro'), 'erro');
+    }
+    carregarNfce();
+  } catch (e) {
+    toast('Erro ao cancelar', 'erro');
+  }
+}
+
+async function inutilizar() {
+  const erroEl = document.getElementById('inut_erro');
+  const okEl   = document.getElementById('inut_ok');
+  erroEl.style.display = 'none';
+  okEl.style.display   = 'none';
+
+  const serie = document.getElementById('inut_serie').value || document.getElementById('serie').value;
+  const ini   = parseInt(document.getElementById('inut_ini').value);
+  const fin   = parseInt(document.getElementById('inut_fin').value);
+  const just  = document.getElementById('inut_just').value.trim();
+
+  if (!ini || !fin || fin < ini) { erroEl.textContent = 'Numeração inválida.'; erroEl.style.display='block'; return; }
+  if (just.length < 15)          { erroEl.textContent = 'Justificativa muito curta (mínimo 15 caracteres).'; erroEl.style.display='block'; return; }
+
+  if (!confirm(`Inutilizar série ${serie}, números ${ini} a ${fin} na SEFAZ?\n\nEsta operação é irreversível.`)) return;
+
+  try {
+    const res = await fetch('/api/fiscal/inutilizar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ serie, nnf_ini: ini, nnf_fin: fin, justificativa: just }),
+    }).then(r => r.json());
+
+    if (res.ok) {
+      okEl.style.display = 'block';
+      okEl.style.background = '#e8f5e9';
+      okEl.style.color = '#1b5e20';
+      okEl.innerHTML = `✅ Inutilização homologada! Protocolo: <strong>${res.protocolo}</strong> — Série ${res.serie}, NF ${res.nnf_ini} a ${res.nnf_fin}`;
+      document.getElementById('inut_ini').value = '';
+      document.getElementById('inut_fin').value = '';
+      document.getElementById('inut_just').value = '';
+      carregarInutilizacoes();
+    } else {
+      erroEl.textContent = (res.motivo || res.erro || 'Erro desconhecido') + (res.cStat ? ` (cStat ${res.cStat})` : '');
+      erroEl.style.display = 'block';
+    }
+  } catch (e) {
+    erroEl.textContent = 'Erro ao comunicar com o servidor.';
+    erroEl.style.display = 'block';
+  }
+}
+
+async function carregarInutilizacoes() {
+  try {
+    const lista = await fetch('/api/fiscal/inutilizacoes').then(r => r.json());
+    const div = document.getElementById('listaInut');
+    if (!lista.length) { div.innerHTML = ''; return; }
+    div.innerHTML = `<table style="margin-top:8px">
+      <thead><tr><th>Série</th><th>NF Ini</th><th>NF Fin</th><th>Status</th><th>Protocolo</th><th>Data</th></tr></thead>
+      <tbody>${lista.map(i => `
+        <tr>
+          <td>${i.serie}</td>
+          <td>${String(i.nnf_ini).padStart(6,'0')}</td>
+          <td>${String(i.nnf_fin).padStart(6,'0')}</td>
+          <td><span class="status-${i.status === 'homologada' ? 'autorizada' : i.status === 'rejeitada' ? 'rejeitada' : 'pendente'}">${i.status}</span></td>
+          <td style="font-size:11px">${i.protocolo || '-'}</td>
+          <td style="font-size:11px">${new Date(i.data_inutilizacao).toLocaleString('pt-BR')}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch {}
+}
+
+async function exportarBackup() {
+  const div = document.getElementById('msgBackup');
+  div.style.display = 'block';
+  div.style.background = '#fff3e0';
+  div.style.color = '#e65100';
+  div.textContent = '⏳ Exportando XMLs...';
+  try {
+    const res = await fetch('/api/fiscal/backup/exportar', { method: 'POST' }).then(r => r.json());
+    div.style.background = '#e8f5e9';
+    div.style.color = '#1b5e20';
+    div.textContent = `✅ ${res.salvos} XMLs novos salvos (${res.total} total no banco) — pasta: backups/xmls/`;
+  } catch (e) {
+    div.style.background = '#ffebee';
+    div.style.color = '#c62828';
+    div.textContent = '❌ Erro ao exportar XMLs';
+  }
+}
+
+carregarConfig();
+carregarNfce();
+carregarInutilizacoes();
+setInterval(carregarNfce, 10000);
+</script>
+</body>
+</html>

@@ -121,7 +121,7 @@ function renderTabela(lista) {
         ${c.status_efetivo !== 'pago'
           ? `<button class="btn btn-sm btn-pagar" onclick="marcarPago(${c.id})" title="Marcar como pago">✅</button>`
           : ''}
-        <button class="btn btn-sm btn-outline" onclick="excluirConta(${c.id})" title="Excluir" style="color:#c62828">🗑️</button>
+        <button class="btn btn-sm btn-outline" onclick="excluirConta(${c.id})" title="Excluir" style="color:#D4705C">🗑️</button>
       </td>
     </tr>
   `).join('');
@@ -203,8 +203,8 @@ async function excluirConta(id) {
   await carregarResumo();
 }
 
-document.getElementById('modalConta').addEventListener('click', function(e) {
-  if (e.target === this) fecharModal('modalConta');
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') fecharModal('modalConta');
 });
 
 init();

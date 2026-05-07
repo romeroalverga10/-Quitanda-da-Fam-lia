@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fechamento de Caixa — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .resumo-fechamento { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:14px 0; }
+    .rf-card { background:#f9f9f9; border-radius:8px; padding:14px; text-align:center; border:1px solid #e0e0e0; }
+    .rf-card .num { font-size:1.4rem; font-weight:800; color:var(--verde-escuro); }
+    .rf-card .lab { font-size:11px; color:#888; margin-top:4px; }
+  </style>
+</head>
+<body>
+
+<!-- TELA DE AUTORIZAÇÃO DE ENTRADA -->
+<div id="telaAuth" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:32px;width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+    <h2 style="margin:0 0 8px;color:var(--verde-escuro)">🔐 Acesso Restrito</h2>
+    <p style="margin:0 0 20px;color:#555;font-size:14px">Digite ou escaneie o código do administrador para acessar o Fechamento de Caixa.</p>
+    <input type="text" id="inputAuthEntrada" placeholder="Código do administrador..."
+           autocomplete="off" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;box-sizing:border-box"
+           onkeydown="if(event.key==='Enter') verificarEntrada()">
+    <div id="erroAuthEntrada" style="color:#d32f2f;font-size:13px;min-height:18px;margin:10px 0"></div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button onclick="location.href='/pdv.html'"
+              style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:14px">
+        Cancelar
+      </button>
+      <button onclick="verificarEntrada()"
+              style="flex:2;padding:10px;border:none;border-radius:8px;background:var(--verde-escuro);color:#fff;cursor:pointer;font-size:14px;font-weight:bold">
+        Entrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEÚDO PRINCIPAL (oculto até autorizar) -->
+<div id="conteudoPrincipal" style="display:none">
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="produtos-layout">
+  <h2 style="margin-bottom:20px;color:var(--verde-escuro)">🏁 Fechamento de Caixa</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+
+    <!-- FECHAR CAIXA -->
+    <div class="card">
+      <h3 style="margin-bottom:16px">Fechar Caixa</h3>
+
+      <div class="form-group">
+        <label>Operador</label>
+        <select id="selOperador" onchange="aoTrocarOperador()"></select>
+      </div>
+
+      <div class="form-group" id="grupoSessao" style="display:none">
+        <label>Sessão a Fechar <span id="statusAbertura" style="font-size:12px;font-weight:normal;color:#888"></span></label>
+        <select id="selSessao" onchange="aoTrocarSessao()"></select>
+      </div>
+
+      <div class="form-group" id="grupoAbertura">
+        <label>Início do Turno</label>
+        <input type="datetime-local" id="dataAbertura" onchange="atualizarPrevia()">
+      </div>
+
+      <div class="form-group">
+        <label>Observações</label>
+        <input type="text" id="obsText" placeholder="Opcional...">
+      </div>
+
+      <div id="previa" style="display:none">
+        <h4 style="margin:12px 0 8px">Prévia</h4>
+        <div class="resumo-fechamento">
+          <div class="rf-card"><div class="num" id="pvTotal">R$ 0,00</div><div class="lab">Total</div></div>
+          <div class="rf-card"><div class="num" id="pvQtd">0</div><div class="lab">Vendas</div></div>
+          <div class="rf-card"><div class="num" id="pvDinheiro">R$ 0,00</div><div class="lab">Dinheiro</div></div>
+          <div class="rf-card"><div class="num" id="pvPix">R$ 0,00</div><div class="lab">PIX</div></div>
+          <div class="rf-card"><div class="num" id="pvDebito">R$ 0,00</div><div class="lab">Débito</div></div>
+          <div class="rf-card"><div class="num" id="pvCredito">R$ 0,00</div><div class="lab">Crédito</div></div>
+        </div>
+      </div>
+
+      <button class="btn btn-verde" style="width:100%;margin-top:14px" onclick="clicouFechar()">
+        🏁 Confirmar Fechamento
+      </button>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">Histórico de Fechamentos</h3>
+        <button class="btn btn-outline btn-sm" onclick="imprimirHistorico()">🖨️ Imprimir</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Filtrar por data</label>
+          <input type="date" id="filtroData" onchange="carregarHistorico()">
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Filtrar por operador</label>
+          <select id="filtroOperador" onchange="carregarHistorico()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+      <div id="historicoLista" style="max-height:440px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+</div> <!-- fim #conteudoPrincipal -->
+
+<!-- MODAL AUTORIZAÇÃO -->
+<div class="modal-overlay" id="modalAuth">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <h2>🔐 Autorização do Administrador</h2>
+      <button class="modal-fechar" onclick="fecharModalAuth()">×</button>
+    </div>
+    <p style="margin:0 0 16px;color:#555;font-size:14px">
+      Escaneie o crachá ou digite o código do administrador para liberar o fechamento.
+    </p>
+    <div class="form-group">
+      <input type="text" id="inputAdmin" placeholder="Código do administrador..."
+             autocomplete="off"
+             onkeydown="if(event.key==='Enter') confirmarAuth()">
+    </div>
+    <div id="erroAuth" style="color:#d32f2f;font-size:13px;min-height:18px;margin-bottom:12px"></div>
+    <div class="d-flex gap-8">
+      <button class="btn btn-cinza" style="flex:1" onclick="fecharModalAuth()">Cancelar</button>
+      <button class="btn btn-verde" style="flex:2" onclick="confirmarAuth()">Liberar Fechamento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Autorização de entrada ────────────────────────────
+  async function verificarEntrada() {
+    const codigo = document.getElementById('inputAuthEntrada').value.trim();
+    if (!codigo) { document.getElementById('erroAuthEntrada').textContent = 'Digite ou escaneie o código do administrador.'; return; }
+
+    const r = await fetch('/api/operadores/verificar-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo })
+    }).then(r => r.json()).catch(() => ({ ok: false }));
+
+    if (!r.ok) {
+      document.getElementById('erroAuthEntrada').textContent = '❌ Código inválido ou não é administrador.';
+      document.getElementById('inputAuthEntrada').value = '';
+      document.getElementById('inputAuthEntrada').focus();
+      return;
+    }
+
+    // Autorizado — exibe o conteúdo
+    document.getElementById('telaAuth').style.display = 'none';
+    document.getElementById('conteudoPrincipal').style.display = 'block';
+    iniciar();
+  }
+
+  // Verifica se já é admin pelo servidor; se não, exibe tela de auth
+  (async () => {
+    try {
+      const r = await fetch('/api/operador-atual').then(r => r.json());
+      if (r.operador && r.operador.perfil === 'admin') {
+        document.getElementById('telaAuth').style.display = 'none';
+        document.getElementById('conteudoPrincipal').style.display = 'block';
+        iniciar();
+        return;
+      }
+    } catch {}
+    // Não é admin ou sessão expirada — exibe tela de autorização
+    document.getElementById('telaAuth').style.display = 'flex';
+    setTimeout(() => document.getElementById('inputAuthEntrada').focus(), 100);
+  })();
+
+  // ── Estado ────────────────────────────────────────────
+  let operadores  = [];
+  let ehAdmin     = false;   // definido pelo servidor a cada ação
+  let opAtualId   = null;
+
+  // ── Utilitários ───────────────────────────────────────
+  const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+
+  function hojeLocal() {
+    const n = new Date();
+    return new Date(n - n.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+
+  function inicioHoje() {
+    const n = new Date();
+    n.setHours(0, 0, 0, 0);
+    return new Date(n - n.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
+
+  // ── Verificar perfil no servidor (chamado antes de fechar) ─
+  async function verificarPerfilServidor() {
+    try {
+      const r = await fetch('/api/operador-atual').then(r => r.json());
+      if (r.operador && r.operador.id) {
+        opAtualId = r.operador.id;
+        return r.operador.perfil === 'admin';
+      }
+    } catch {}
+    return false;
+  }
+
+  // ── Inicialização ─────────────────────────────────────
+  async function iniciar() {
+    // Carrega perfil do servidor
+    try {
+      const r = await fetch('/api/operador-atual').then(r => r.json());
+      if (r.operador && r.operador.id) {
+        opAtualId = r.operador.id;
+        ehAdmin   = r.operador.perfil === 'admin';
+      }
+    } catch {}
+
+    // Carrega lista de operadores
+    try {
+      const r = await fetch('/api/operadores').then(r => r.json());
+      operadores = Array.isArray(r) ? r : [];
+    } catch {}
+
+    // Monta dropdown
+    const sel = document.getElementById('selOperador');
+    sel.innerHTML = '';
+    if (!operadores.length) {
+      sel.innerHTML = '<option value="">Nenhum operador cadastrado</option>';
+    } else {
+      for (const o of operadores) {
+        const opt = document.createElement('option');
+        opt.value = String(o.id);
+        opt.textContent = o.nome + ' (' + (o.turno === 'manha' ? 'Manhã' : 'Tarde') + ')';
+        sel.appendChild(opt);
+      }
+      if (opAtualId) sel.value = String(opAtualId);
+    }
+
+    document.getElementById('filtroData').value = hojeLocal();
+    document.getElementById('dataAbertura').value = inicioHoje();
+
+    await aoTrocarOperador();
+    carregarHistorico();
+  }
+
+  // ── Troca de operador no dropdown ────────────────────
+  async function aoTrocarOperador() {
+    const opId = document.getElementById('selOperador').value;
+    document.getElementById('dataAbertura').value  = inicioHoje();
+    document.getElementById('statusAbertura').textContent = '';
+    document.getElementById('grupoSessao').style.display  = 'none';
+    document.getElementById('grupoAbertura').style.display = '';
+    if (!opId) { atualizarPrevia(); return; }
+
+    try {
+      const lista = await fetch('/api/fechamentos/abertura/' + opId).then(r => r.json());
+
+      if (!lista || !lista.length) {
+        document.getElementById('statusAbertura').textContent = '⚠️ Sem abertura registrada hoje';
+        document.getElementById('statusAbertura').style.color = '#e67e22';
+        atualizarPrevia();
+        return;
+      }
+
+      if (lista.length === 1) {
+        // Só uma sessão — preenche direto
+        document.getElementById('dataAbertura').value = lista[0].data_hora.substring(0, 16);
+        document.getElementById('statusAbertura').textContent =
+          '✅ Entrada: ' + new Date(lista[0].data_hora).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+        document.getElementById('statusAbertura').style.color = '#E8816D';
+      } else {
+        // Múltiplas sessões — mostra dropdown para escolher
+        const sel = document.getElementById('selSessao');
+        sel.innerHTML = lista.map((ab, i) =>
+          `<option value="${ab.data_hora}">${i + 1}ª sessão — Entrada: ${new Date(ab.data_hora).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</option>`
+        ).join('');
+        document.getElementById('grupoSessao').style.display  = '';
+        document.getElementById('grupoAbertura').style.display = 'none';
+        document.getElementById('statusAbertura').textContent =
+          `${lista.length} sessões abertas — escolha qual fechar`;
+        document.getElementById('statusAbertura').style.color = '#E8816D';
+        document.getElementById('dataAbertura').value = lista[0].data_hora.substring(0, 16);
+      }
+    } catch {}
+
+    atualizarPrevia();
+  }
+
+  function aoTrocarSessao() {
+    const val = document.getElementById('selSessao').value;
+    if (val) document.getElementById('dataAbertura').value = val.substring(0, 16);
+    atualizarPrevia();
+  }
+
+  // ── Prévia dos valores ────────────────────────────────
+  async function atualizarPrevia() {
+    const opId    = document.getElementById('selOperador').value;
+    const abertura = document.getElementById('dataAbertura').value;
+    if (!opId || !abertura) { document.getElementById('previa').style.display = 'none'; return; }
+
+    try {
+      const n   = new Date();
+      const fim = new Date(n - n.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      const r   = await fetch(
+        `/api/relatorios?inicio=${abertura.substring(0,10)}&fim=${fim}&operador_id=${opId}`
+      ).then(r => r.json());
+
+      document.getElementById('pvTotal').textContent   = fmt(r.totalGeral?.total || 0);
+      document.getElementById('pvQtd').textContent     = r.totalGeral?.qtd_vendas || 0;
+      const fp  = r.porFormaPagamento || [];
+      const get = f => fp.find(x => x.forma_pagamento === f)?.total || 0;
+      document.getElementById('pvDinheiro').textContent = fmt(get('dinheiro'));
+      document.getElementById('pvPix').textContent      = fmt(get('pix'));
+      document.getElementById('pvDebito').textContent   = fmt(get('debito'));
+      document.getElementById('pvCredito').textContent  = fmt(get('credito'));
+      document.getElementById('previa').style.display   = 'block';
+    } catch {
+      document.getElementById('previa').style.display = 'none';
+    }
+  }
+
+  // ── Botão Confirmar Fechamento ────────────────────────
+  async function clicouFechar() {
+    const opId     = document.getElementById('selOperador').value;
+    const abertura = document.getElementById('dataAbertura').value;
+    if (!opId)     { alert('Selecione o operador.'); return; }
+    if (!abertura) { alert('Informe o início do turno.'); return; }
+
+    // Todos os operadores precisam de autorização do admin, sem exceção
+    document.getElementById('inputAdmin').value      = '';
+    document.getElementById('erroAuth').textContent  = '';
+    document.getElementById('modalAuth').classList.add('ativo');
+    setTimeout(() => document.getElementById('inputAdmin').focus(), 100);
+  }
+
+  // ── Modal autorização ─────────────────────────────────
+  function fecharModalAuth() {
+    document.getElementById('modalAuth').classList.remove('ativo');
+  }
+
+  async function confirmarAuth() {
+    const codigo = document.getElementById('inputAdmin').value.trim();
+    if (!codigo) {
+      document.getElementById('erroAuth').textContent = 'Digite ou escaneie o código do administrador.';
+      return;
+    }
+
+    const r = await fetch('/api/operadores/verificar-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo })
+    }).then(r => r.json()).catch(() => ({ ok: false }));
+
+    if (!r.ok) {
+      document.getElementById('erroAuth').textContent = '❌ Código inválido ou não é administrador.';
+      document.getElementById('inputAdmin').value = '';
+      document.getElementById('inputAdmin').focus();
+      return;
+    }
+
+    fecharModalAuth();
+    executarFechamento(r.nome);
+  }
+
+  // ── Executa o fechamento ──────────────────────────────
+  async function executarFechamento(autorizadoPor) {
+    const opId     = document.getElementById('selOperador').value;
+    const abertura = document.getElementById('dataAbertura').value;
+    const obsBase  = document.getElementById('obsText').value.trim();
+    const obs      = autorizadoPor
+      ? (obsBase ? obsBase + ' | Aut.: ' + autorizadoPor : 'Autorizado por: ' + autorizadoPor)
+      : obsBase;
+
+    const r = await fetch('/api/fechamentos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operador_id: opId, data_abertura: abertura, observacoes: obs })
+    }).then(r => r.json()).catch(() => ({ ok: false, erro: 'Erro de conexão' }));
+
+    if (r.ok) {
+      alert(`✅ Caixa fechado!\nTotal: ${fmt(r.resumo.total_vendas)}\nVendas: ${r.resumo.qtd_vendas}`);
+      document.getElementById('obsText').value = '';
+      carregarHistorico();
+      atualizarPrevia();
+    } else {
+      alert(r.erro || 'Erro ao fechar caixa');
+    }
+  }
+
+  // ── Histórico ─────────────────────────────────────────
+  async function carregarHistorico() {
+    const data = document.getElementById('filtroData').value;
+    const filtroOp = document.getElementById('filtroOperador').value;
+    let lista = [];
+    try { lista = await fetch(`/api/fechamentos?data=${data}`).then(r => r.json()); } catch {}
+
+    // Popula dropdown de operadores com os nomes presentes na lista
+    const sel = document.getElementById('filtroOperador');
+    const valorAtual = sel.value;
+    const nomes = [...new Set(lista.map(f => f.operador_nome))].sort();
+    sel.innerHTML = '<option value="">Todos</option>' +
+      nomes.map(n => `<option value="${n}" ${n === valorAtual ? 'selected' : ''}>${n}</option>`).join('');
+
+    // Aplica filtro por operador
+    if (filtroOp) lista = lista.filter(f => f.operador_nome === filtroOp);
+
+    const el = document.getElementById('historicoLista');
+    if (!lista.length) {
+      el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Nenhum fechamento nesta data</p>';
+      return;
+    }
+
+    el.innerHTML = lista.map(f => {
+      const entrada = new Date(f.data_abertura);
+      const saida   = new Date(f.data_fechamento);
+      const durMin  = Math.round((saida - entrada) / 60000);
+      const dur     = durMin >= 60
+        ? `${Math.floor(durMin/60)}h${durMin%60 ? durMin%60+'min' : ''}`
+        : `${durMin}min`;
+      return `
+        <div style="border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>${f.operador_nome}</strong>
+            <span style="font-size:12px;color:#888">${f.turno === 'manha' ? '🌅 Manhã' : '🌆 Tarde'}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px;margin-bottom:8px;background:#f9f9f9;border-radius:6px;padding:8px">
+            <div><span style="color:#E8816D;font-weight:bold">🟢 Entrada</span><br>${entrada.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+            <div><span style="color:#d32f2f;font-weight:bold">🔴 Saída</span><br>${saida.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+            <div><span style="color:#555;font-weight:bold">⏱ Duração</span><br>${dur}</div>
+          </div>
+          <div style="font-size:11px;color:#aaa;margin-bottom:8px">${entrada.toLocaleDateString('pt-BR')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:13px">
+            <div><strong>${fmt(f.total_vendas)}</strong><br><span style="color:#888">Total</span></div>
+            <div><strong>${f.qtd_vendas}</strong><br><span style="color:#888">Vendas</span></div>
+            <div><strong>${fmt(f.total_dinheiro)}</strong><br><span style="color:#888">Dinheiro</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:13px;margin-top:6px">
+            <div><strong>${fmt(f.total_pix)}</strong><br><span style="color:#888">PIX</span></div>
+            <div><strong>${fmt(f.total_debito || 0)}</strong><br><span style="color:#888">Débito</span></div>
+            <div><strong>${fmt(f.total_credito || 0)}</strong><br><span style="color:#888">Crédito</span></div>
+          </div>
+          ${f.observacoes ? `<div style="margin-top:8px;font-size:12px;color:#666;font-style:italic">${f.observacoes}</div>` : ''}
+          <div style="text-align:right;margin-top:10px">
+            <button class="btn btn-vermelho btn-sm" onclick="apagarFechamento(${f.id}, '${f.operador_nome}')">🗑️ Apagar este registro</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function imprimirHistorico() {
+    const data = document.getElementById('filtroData').value;
+    const dataFmt = data ? new Date(data + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+    const conteudo = document.getElementById('historicoLista').innerHTML;
+
+    const janela = window.open('', '_blank', 'width=700,height=800');
+    janela.document.write(`
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>Histórico de Fechamentos — ${dataFmt}</title>
+        <style>
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { font-family: 'Segoe UI', sans-serif; padding: 24px; color: #212121; }
+          h1 { font-size: 1.2rem; margin-bottom: 4px; }
+          .sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+          .item { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px; page-break-inside: avoid; }
+          .btn { display: none !important; }
+          strong { font-weight: 700; }
+          @media print {
+            body { padding: 12px; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>🏁 Histórico de Fechamentos</h1>
+        <div class="sub">Data: ${dataFmt} &nbsp;|&nbsp; Impresso em: ${new Date().toLocaleString('pt-BR')}</div>
+        ${conteudo}
+        <script>window.onload = function(){ window.print(); }<\/script>
+      </body>
+      </html>
+    `);
+    janela.document.close();
+  }
+
+  async function apagarFechamento(id, nomeOperador) {
+    const isAdmin = await verificarPerfilServidor();
+    if (!isAdmin) { alert('Apenas o administrador pode apagar registros.'); return; }
+    if (!confirm(`Apagar este fechamento de "${nomeOperador}"?\n\nEsta ação não pode ser desfeita.`)) return;
+
+    const r = await fetch(`/api/fechamentos/${id}`, { method: 'DELETE' })
+      .then(r => r.json()).catch(() => ({ ok: false }));
+
+    if (r.ok) carregarHistorico();
+    else alert(r.erro || 'Erro ao apagar registro');
+  }
+</script>
+</body>
+</html>

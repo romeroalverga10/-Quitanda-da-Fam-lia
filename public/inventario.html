@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventário — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+    }
+    body { background: #fff5f5; font-family: sans-serif; }
+    .header { background: #E8816D; color: #fff; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { margin: 0; font-size: 20px; }
+    .layout { max-width: 1000px; margin: 24px auto; padding: 0 16px; }
+    .topo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .topo h2 { margin: 0; color: #E8816D; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn { padding: 8px 18px; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: bold; }
+    .btn-verde  { background: #E8816D; color: #fff; }
+    .btn-azul   { background: #E8816D; color: #fff; }
+    .btn-cinza  { background: #fff; color: #E8816D; border: 1px solid rgba(232,129,109,0.35); }
+    .cards-topo { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .card-stat { background: #fff; border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(232,129,109,.1); border: 1px solid rgba(232,129,109,.12); }
+    .card-stat .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+    .card-stat .valor { font-size: 24px; font-weight: bold; color: #E8816D; margin-top: 4px; }
+    .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(232,129,109,.1); border: 1px solid rgba(232,129,109,.1); }
+    .filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .filtros input, .filtros select { padding: 7px 10px; border: 1px solid rgba(232,129,109,.3); border-radius: 6px; font-size: 13px; background: #fff; }
+    .filtros input:focus, .filtros select:focus { outline: none; border-color: #E8816D; box-shadow: 0 0 0 2px rgba(232,129,109,.15); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: #fff0ee; padding: 9px 8px; text-align: left; font-size: 12px; text-transform: uppercase; color: #E8816D; border-bottom: 2px solid rgba(232,129,109,.2); }
+    tbody tr { border-bottom: 1px solid #fdf0ef; }
+    tbody tr:hover { background: #fff8f7; }
+    td { padding: 8px; }
+    .td-right { text-align: right; }
+    .td-center { text-align: center; }
+    .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; background: #fdecea; color: #E8816D; }
+    .sem-ncm { font-size: 11px; background: #fff3e0; color: #e65100; padding: 1px 6px; border-radius: 4px; }
+    .estoque-baixo { color: #D4705C; font-weight: bold; }
+    .vencido { color: #D4705C; }
+    .vence-hoje { color: #f57c00; font-weight: bold; }
+    tfoot td { font-weight: bold; background: #fff0ee; padding: 10px 8px; border-top: 2px solid rgba(232,129,109,.2); color: #E8816D; }
+    .print-header { display: none; }
+    @media print {
+      body { background: #fff; }
+      .print-header { display: block; text-align: center; margin-bottom: 16px; }
+      .print-header h2 { font-size: 18px; }
+      .print-header p { font-size: 12px; color: #666; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header no-print">
+  <h1>🛒 Quitanda da Família</h1>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-cinza" onclick="location.href='/produtos.html'">Produtos</button>
+    <button class="btn btn-cinza" onclick="location.href='/pdv.html'">← PDV</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div class="print-header">
+    <h2>Inventário — Quitanda da Família</h2>
+    <p id="printData"></p>
+  </div>
+
+  <div class="topo no-print">
+    <h2>📦 Inventário de Estoque</h2>
+    <div class="btn-row">
+      <button class="btn btn-azul" onclick="baixarCSV()">⬇️ Exportar CSV</button>
+      <button class="btn btn-cinza" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>
+
+  <div class="cards-topo" id="cardsResumo"></div>
+
+  <div class="card">
+    <div class="filtros no-print">
+      <input type="text" id="busca" placeholder="Buscar produto..." oninput="filtrar()" style="width:200px">
+      <select id="filtroCategoria" onchange="filtrar()">
+        <option value="">Todas as categorias</option>
+      </select>
+      <select id="filtroNCM" onchange="filtrar()">
+        <option value="">NCM: todos</option>
+        <option value="sem">Sem NCM</option>
+        <option value="com">Com NCM</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Produto</th>
+          <th>Categoria</th>
+          <th>Cód. Barras</th>
+          <th>NCM</th>
+          <th>Unid.</th>
+          <th class="td-right">Preço Unit.</th>
+          <th class="td-right">Estoque</th>
+          <th class="td-right">Est. Mín.</th>
+          <th class="td-right">Valor Total</th>
+          <th>Validade</th>
+        </tr>
+      </thead>
+      <tbody id="corpo"></tbody>
+      <tfoot id="rodape"></tfoot>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let todos = [];
+
+async function carregar() {
+  const res = await fetch('/api/relatorios/inventario').then(r => r.json());
+  todos = res.produtos || [];
+
+  // Resumo
+  const semNCM = todos.filter(p => !p.ncm).length;
+  const estoqueBaixo = todos.filter(p => p.estoque_atual <= p.estoque_minimo && p.estoque_minimo > 0).length;
+  document.getElementById('cardsResumo').innerHTML = `
+    <div class="card-stat">
+      <div class="label">Produtos Ativos</div>
+      <div class="valor">${res.totalItens}</div>
+    </div>
+    <div class="card-stat">
+      <div class="label">Valor do Estoque</div>
+      <div class="valor">R$ ${fmt(res.totalEstoque)}</div>
+    </div>
+    <div class="card-stat">
+      <div class="label">Estoque Baixo</div>
+      <div class="valor" style="color:${estoqueBaixo > 0 ? '#D4705C' : '#E8816D'}">${estoqueBaixo}</div>
+    </div>
+    <div class="card-stat">
+      <div class="label">Sem NCM</div>
+      <div class="valor" style="color:${semNCM > 0 ? '#e65100' : '#E8816D'}">${semNCM}</div>
+    </div>
+  `;
+
+  // Categorias no filtro
+  const cats = [...new Set(todos.map(p => p.categoria))].sort();
+  const sel = document.getElementById('filtroCategoria');
+  cats.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
+
+  document.getElementById('printData').textContent =
+    'Gerado em ' + new Date().toLocaleString('pt-BR');
+
+  filtrar();
+}
+
+function filtrar() {
+  const busca = document.getElementById('busca').value.toLowerCase();
+  const cat   = document.getElementById('filtroCategoria').value;
+  const ncmF  = document.getElementById('filtroNCM').value;
+
+  const lista = todos.filter(p => {
+    if (busca && !p.nome.toLowerCase().includes(busca) && !(p.codigo_barras || '').includes(busca)) return false;
+    if (cat && p.categoria !== cat) return false;
+    if (ncmF === 'sem' && p.ncm) return false;
+    if (ncmF === 'com' && !p.ncm) return false;
+    return true;
+  });
+
+  renderTabela(lista);
+}
+
+function renderTabela(lista) {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const tbody = document.getElementById('corpo');
+
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#aaa;padding:20px">Nenhum produto encontrado.</td></tr>';
+    document.getElementById('rodape').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = lista.map((p, i) => {
+    const estBaixo = p.estoque_minimo > 0 && p.estoque_atual <= p.estoque_minimo;
+    const validade = p.data_validade ? validadeInfo(p.data_validade, hoje) : { txt: '—', cls: '' };
+    const ncmCell = p.ncm
+      ? p.ncm
+      : '<span class="sem-ncm">Sem NCM</span>';
+    const qtdStr = p.unidade === 'kg'
+      ? Number(p.estoque_atual).toFixed(3) + ' kg'
+      : Number(p.estoque_atual).toFixed(0) + ' un';
+    const minStr = p.unidade === 'kg'
+      ? Number(p.estoque_minimo).toFixed(3)
+      : Number(p.estoque_minimo).toFixed(0);
+
+    return `<tr>
+      <td class="td-center" style="color:#aaa;font-size:12px">${i + 1}</td>
+      <td><strong>${p.nome}</strong></td>
+      <td><span class="cat-badge">${p.categoria}</span></td>
+      <td style="font-size:12px;color:#777">${p.codigo_barras || '—'}</td>
+      <td style="font-size:12px">${ncmCell}</td>
+      <td class="td-center">${p.unidade}</td>
+      <td class="td-right">R$ ${fmt(p.preco)}</td>
+      <td class="td-right ${estBaixo ? 'estoque-baixo' : ''}">${qtdStr}${estBaixo ? ' ⚠️' : ''}</td>
+      <td class="td-right" style="color:#aaa">${minStr}</td>
+      <td class="td-right"><strong>R$ ${fmt(p.valor_total || 0)}</strong></td>
+      <td class="${validade.cls}" style="font-size:12px">${validade.txt}</td>
+    </tr>`;
+  }).join('');
+
+  const total = lista.reduce((s, p) => s + (p.valor_total || 0), 0);
+  document.getElementById('rodape').innerHTML = `
+    <tr>
+      <td colspan="9" style="text-align:right">TOTAL DO ESTOQUE (${lista.length} produtos):</td>
+      <td class="td-right">R$ ${fmt(total)}</td>
+      <td></td>
+    </tr>
+  `;
+}
+
+function validadeInfo(iso, hoje) {
+  const d = new Date(iso + 'T00:00:00');
+  const dias = Math.floor((d - hoje) / 86400000);
+  const txt = formatarDataBR(iso);
+  if (dias < 0) return { txt: txt + ' (VENCIDO)', cls: 'vencido' };
+  if (dias === 0) return { txt: txt + ' (HOJE)', cls: 'vence-hoje' };
+  if (dias <= 3) return { txt: txt + ` (${dias}d)`, cls: 'vence-hoje' };
+  return { txt, cls: '' };
+}
+
+function baixarCSV() {
+  window.location.href = '/api/relatorios/inventario/csv';
+}
+
+function fmt(v) { return Number(v || 0).toFixed(2).replace('.', ','); }
+function formatarDataBR(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+carregar();
+</script>
+</body>
+</html>

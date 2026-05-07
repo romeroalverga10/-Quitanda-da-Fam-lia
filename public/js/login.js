@@ -34,6 +34,7 @@
       }).then(r => r.json());
 
       if (res.ok) {
+        localStorage.setItem('perfil', res.operador.perfil || 'operador');
         window.location.href = '/pdv.html';
       } else {
         erroEl.textContent = res.erro || 'Erro ao fazer login';

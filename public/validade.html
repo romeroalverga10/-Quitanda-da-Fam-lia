@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Validade — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .val-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .val-card { border-radius: 12px; padding: 20px 16px; text-align: center; }
+    .val-card .num { font-size: 2rem; font-weight: 800; }
+    .val-card .lab { font-size: 0.85rem; margin-top: 4px; }
+    .val-card.vencido { background: #7f1d1d; color: #fff; }
+    .val-card.critico { background: #fee2e2; color: #7f1d1d; }
+    .val-card.atencao { background: #fef9c3; color: #713f12; }
+    .val-card.ok      { background: #dcfce7; color: #14532d; }
+    .tr-vencido td { background: #7f1d1d !important; color: #fff; }
+    .tr-critico td { background: #fee2e2; }
+    .tr-atencao td { background: #fef9c3; }
+    .filtros { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .badge.vencido { background: #7f1d1d; color: #fff; }
+    .badge.critico { background: #ef4444; color: #fff; }
+    .badge.atencao { background: #f59e0b; color: #fff; }
+    .badge.ok      { background: #22c55e; color: #fff; }
+  </style>
+</head>
+<body>
+<script>
+  (async () => {
+    try {
+      const res = await fetch('/api/operador-atual').then(r => r.json());
+      const perfil = res.operador?.perfil || localStorage.getItem('perfil') || 'operador';
+      if (perfil !== 'admin') { alert('Acesso restrito ao administrador.'); location.href = '/pdv.html'; }
+    } catch { if (localStorage.getItem('perfil') !== 'admin') { location.href = '/pdv.html'; } }
+  })();
+</script>
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/produtos.html'">Produtos</button>
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="produtos-layout">
+  <h2 style="margin-bottom:20px;color:var(--verde-escuro)">⏰ Controle de Validade</h2>
+
+  <div class="val-cards">
+    <div class="val-card vencido"><div class="num" id="cntVencido">0</div><div class="lab">⚫ Vencidos</div></div>
+    <div class="val-card critico"><div class="num" id="cntCritico">0</div><div class="lab">🔴 Crítico (0-1 dia)</div></div>
+    <div class="val-card atencao"><div class="num" id="cntAtencao">0</div><div class="lab">🟡 Atenção (2-3 dias)</div></div>
+    <div class="val-card ok">    <div class="num" id="cntOk">0</div>     <div class="lab">🟢 OK</div></div>
+  </div>
+
+  <div class="filtros">
+    <input type="text" id="busca" placeholder="Buscar produto..." oninput="renderTabela()" style="max-width:220px">
+    <select id="filtroStatus" onchange="renderTabela()">
+      <option value="">Todos</option>
+      <option value="vencido">Vencidos</option>
+      <option value="critico">Crítico</option>
+      <option value="atencao">Atenção</option>
+      <option value="ok">OK</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Categoria</th>
+          <th>Estoque</th>
+          <th>Unidade</th>
+          <th>Validade</th>
+          <th>Dias restantes</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="corpoValidade"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let todos = [];
+
+  function fmtData(iso) {
+    if (!iso) return '—';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function diasLabel(p) {
+    if (p.status === 'vencido') return `Vencido há ${Math.abs(p.dias_para_vencer)} dia(s)`;
+    if (p.dias_para_vencer === 0) return 'Vence hoje';
+    if (p.dias_para_vencer === 1) return 'Vence amanhã';
+    return `${p.dias_para_vencer} dias`;
+  }
+
+  function badgeStatus(s) {
+    const labels = { vencido: '⚫ Vencido', critico: '🔴 Crítico', atencao: '🟡 Atenção', ok: '🟢 OK' };
+    return `<span class="badge ${s}">${labels[s] || s}</span>`;
+  }
+
+  function renderTabela() {
+    const busca = document.getElementById('busca').value.toLowerCase();
+    const filtro = document.getElementById('filtroStatus').value;
+    const lista = todos.filter(p => {
+      const matchBusca = p.nome.toLowerCase().includes(busca);
+      const matchStatus = !filtro || p.status === filtro;
+      return matchBusca && matchStatus;
+    });
+
+    const tbody = document.getElementById('corpoValidade');
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px">Nenhum produto encontrado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = lista.map(p => `
+      <tr class="tr-${p.status}">
+        <td>${p.nome}</td>
+        <td>${p.categoria_nome}</td>
+        <td>${p.estoque_atual}</td>
+        <td>${p.unidade}</td>
+        <td>${fmtData(p.data_validade)}</td>
+        <td>${diasLabel(p)}</td>
+        <td>${badgeStatus(p.status)}</td>
+        <td><button class="btn btn-verde btn-sm" onclick="editarValidade(${p.id}, '${p.data_validade || ''}')">Editar Data</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function atualizarCards() {
+    document.getElementById('cntVencido').textContent = todos.filter(p => p.status === 'vencido').length;
+    document.getElementById('cntCritico').textContent = todos.filter(p => p.status === 'critico').length;
+    document.getElementById('cntAtencao').textContent = todos.filter(p => p.status === 'atencao').length;
+    document.getElementById('cntOk').textContent      = todos.filter(p => p.status === 'ok').length;
+  }
+
+  async function carregar() {
+    todos = await fetch('/api/produtos/validade').then(r => r.json());
+    atualizarCards();
+    renderTabela();
+  }
+
+  async function editarValidade(id, dataAtual) {
+    const nova = prompt('Nova data de validade (AAAA-MM-DD):', dataAtual);
+    if (nova === null) return;
+    await fetch(`/api/produtos/${id}/validade`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data_validade: nova || null })
+    });
+    await carregar();
+  }
+
+  carregar();
+  setInterval(carregar, 5 * 60 * 1000);
+</script>
+</body>
+</html>

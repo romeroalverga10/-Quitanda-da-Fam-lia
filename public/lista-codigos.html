@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Tabela de Códigos — Quitanda da Família</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    padding: 20px;
+  }
+
+  .controles {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .controles button {
+    background: #2a7a3b;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    font-size: 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 0 6px;
+  }
+  .controles button:hover { background: #1e5c2b; }
+
+  .folha {
+    width: 15cm;
+    min-height: 10cm;
+    background: #fff;
+    margin: 0 auto;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .cabecalho {
+    text-align: center;
+    border-bottom: 2px solid #2a7a3b;
+    padding-bottom: 5px;
+    margin-bottom: 7px;
+  }
+  .cabecalho h1 {
+    font-size: 13px;
+    color: #2a7a3b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .cabecalho p {
+    font-size: 9px;
+    color: #666;
+    margin-top: 1px;
+  }
+
+  .grade {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px 4px;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 3px;
+    border-radius: 3px;
+    background: #f9f9f9;
+    border: 1px solid #e8e8e8;
+  }
+
+  .cod {
+    font-size: 11px;
+    font-weight: bold;
+    color: #fff;
+    background: #2a7a3b;
+    border-radius: 3px;
+    padding: 1px 4px;
+    min-width: 26px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .nome {
+    font-size: 9.5px;
+    color: #222;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rodape {
+    text-align: center;
+    font-size: 8px;
+    color: #999;
+    margin-top: 6px;
+    border-top: 1px solid #eee;
+    padding-top: 4px;
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .controles { display: none; }
+    .folha {
+      border: none;
+      margin: 0;
+      padding: 5px 8px;
+      width: 100%;
+    }
+    .item { background: #f5f5f5; }
+  }
+</style>
+</head>
+<body>
+
+<div class="controles">
+  <button onclick="window.print()">🖨️ Imprimir</button>
+  <button onclick="window.location='/'">← Voltar ao PDV</button>
+</div>
+
+<div class="folha">
+  <div class="cabecalho">
+    <h1>Quitanda da Família — Tabela de Códigos</h1>
+    <p>Hortifruti · Frutas, Legumes e Verduras</p>
+  </div>
+
+  <div class="grade" id="grade"></div>
+
+  <div class="rodape" id="rodape"></div>
+</div>
+
+<script>
+const produtos = [
+  {cod:'001',nome:'Abacate'},{cod:'002',nome:'Abacaxi Pérola'},{cod:'003',nome:'Abobrinha Italiana'},
+  {cod:'004',nome:'Abobrinha Verde'},{cod:'005',nome:'Acelga'},{cod:'006',nome:'Agrião'},
+  {cod:'007',nome:'Alface Americana'},{cod:'008',nome:'Alface Crespa'},{cod:'009',nome:'Alface Roxa'},
+  {cod:'010',nome:'Alho'},{cod:'011',nome:'Alho-Poró'},{cod:'012',nome:'Almeirão'},
+  {cod:'013',nome:'Ameixa'},{cod:'014',nome:'Banana Prata'},{cod:'015',nome:'Batata Baroa'},
+  {cod:'016',nome:'Batata Inglesa'},{cod:'017',nome:'Batata-Doce'},{cod:'018',nome:'Berinjela'},
+  {cod:'019',nome:'Beterraba'},{cod:'020',nome:'Brócolis'},{cod:'021',nome:'Caju'},
+  {cod:'022',nome:'Caqui'},{cod:'023',nome:'Cará'},{cod:'024',nome:'Cebola'},
+  {cod:'025',nome:'Cebola Roxa'},{cod:'026',nome:'Cebolinha'},{cod:'027',nome:'Cenoura'},
+  {cod:'028',nome:'Chicória'},{cod:'029',nome:'Chuchu'},{cod:'030',nome:'Coentro'},
+  {cod:'031',nome:'Cog. Shiitake'},{cod:'032',nome:'Cog. Shimeji'},{cod:'033',nome:'Couve Manteiga'},
+  {cod:'034',nome:'Couve-Flor'},{cod:'035',nome:'Ervilha Torta'},{cod:'036',nome:'Escarola'},
+  {cod:'037',nome:'Espinafre'},{cod:'038',nome:'Goiaba'},{cod:'039',nome:'Hortelã'},
+  {cod:'040',nome:'Inhame'},{cod:'041',nome:'Jiló'},{cod:'042',nome:'Kiwi'},
+  {cod:'043',nome:'Laranja Pera'},{cod:'044',nome:'Limão Tahiti'},{cod:'045',nome:'Mamão Formosa'},
+  {cod:'046',nome:'Mandioca (Aipim)'},{cod:'047',nome:'Manga Palmer'},{cod:'048',nome:'Maracujá'},
+  {cod:'049',nome:'Maxixe'},{cod:'050',nome:'Maçã Fuji'},{cod:'051',nome:'Melancia'},
+  {cod:'052',nome:'Melão Amarelo'},{cod:'053',nome:'Milho Verde'},{cod:'054',nome:'Morango'},
+  {cod:'055',nome:'Mostarda'},{cod:'056',nome:'Nabo'},{cod:'057',nome:'Pepino'},
+  {cod:'058',nome:'Pera Williams'},{cod:'059',nome:'Pimentão Amarelo'},{cod:'060',nome:'Pimentão Verde'},
+  {cod:'061',nome:'Pimentão Verm.'},{cod:'062',nome:'Quiabo'},{cod:'063',nome:'Rabanete'},
+  {cod:'064',nome:'Repolho Roxo'},{cod:'065',nome:'Repolho Verde'},{cod:'066',nome:'Rúcula'},
+  {cod:'067',nome:'Salsa'},{cod:'068',nome:'Tangerina Ponkan'},{cod:'069',nome:'Tomate Cereja'},
+  {cod:'070',nome:'Uva Itália'},{cod:'071',nome:'Vagem'}
+];
+
+const grade = document.getElementById('grade');
+produtos.forEach(p => {
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.innerHTML = `<span class="cod">${p.cod}</span><span class="nome">${p.nome}</span>`;
+  grade.appendChild(div);
+});
+
+const agora = new Date();
+document.getElementById('rodape').textContent =
+  `Atualizado em ${agora.toLocaleDateString('pt-BR')} · ${produtos.length} produtos`;
+</script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 const db = require('../database/db');
 const router = require('express').Router();
 
+const err = (res, e) => res.json({ ok: false, erro: e.message || 'Erro interno' });
+
 router.get('/resumo', (req, res) => {
   const hoje = new Date().toISOString().substring(0, 10);
   const totalPagar   = db.get(`SELECT COALESCE(SUM(valor),0) AS total FROM contas WHERE tipo='pagar' AND status='pendente'`);
@@ -59,34 +61,42 @@ router.post('/', (req, res) => {
   const { descricao, tipo, valor, data_vencimento, fornecedor_id, observacoes } = req.body;
   if (!descricao || !tipo || !valor || !data_vencimento)
     return res.status(400).json({ erro: 'Campos obrigatórios: descricao, tipo, valor, data_vencimento' });
-  const r = db.run(
-    `INSERT INTO contas (descricao,tipo,valor,data_vencimento,status,fornecedor_id,observacoes)
-     VALUES (?,?,?,?,'pendente',?,?)`,
-    [descricao, tipo, valor, data_vencimento, fornecedor_id || null, observacoes || null]
-  );
-  res.json({ ok: true, id: Number(r.lastInsertRowid) });
+  try {
+    const r = db.run(
+      `INSERT INTO contas (descricao,tipo,valor,data_vencimento,status,fornecedor_id,observacoes)
+       VALUES (?,?,?,?,'pendente',?,?)`,
+      [descricao, tipo, valor, data_vencimento, fornecedor_id || null, observacoes || null]
+    );
+    res.json({ ok: true, id: Number(r.lastInsertRowid) });
+  } catch (e) { err(res, e); }
 });
 
 router.put('/:id/pagar', (req, res) => {
-  const hoje = new Date().toISOString().substring(0, 10);
-  db.run('UPDATE contas SET status=?,data_pagamento=? WHERE id=?', ['pago', hoje, req.params.id]);
-  res.json({ ok: true });
+  try {
+    const hoje = new Date().toISOString().substring(0, 10);
+    db.run('UPDATE contas SET status=?,data_pagamento=? WHERE id=?', ['pago', hoje, req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { err(res, e); }
 });
 
 router.put('/:id', (req, res) => {
   const { descricao, tipo, valor, data_vencimento, fornecedor_id, observacoes } = req.body;
   if (!descricao || !tipo || !valor || !data_vencimento)
     return res.status(400).json({ erro: 'Campos obrigatórios: descricao, tipo, valor, data_vencimento' });
-  db.run(
-    'UPDATE contas SET descricao=?,tipo=?,valor=?,data_vencimento=?,fornecedor_id=?,observacoes=? WHERE id=?',
-    [descricao, tipo, valor, data_vencimento, fornecedor_id || null, observacoes || null, req.params.id]
-  );
-  res.json({ ok: true });
+  try {
+    db.run(
+      'UPDATE contas SET descricao=?,tipo=?,valor=?,data_vencimento=?,fornecedor_id=?,observacoes=? WHERE id=?',
+      [descricao, tipo, valor, data_vencimento, fornecedor_id || null, observacoes || null, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (e) { err(res, e); }
 });
 
 router.delete('/:id', (req, res) => {
-  db.run('DELETE FROM contas WHERE id=?', req.params.id);
-  res.json({ ok: true });
+  try {
+    db.run('DELETE FROM contas WHERE id=?', req.params.id);
+    res.json({ ok: true });
+  } catch (e) { err(res, e); }
 });
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const config = require('../config');
+const db = require('../database/db');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -10,6 +11,7 @@ const GS = 0x1D;
 function cmd(...bytes) { return Buffer.from(bytes); }
 
 const INIT        = cmd(ESC, 0x40);
+const CODEPAGE    = cmd(ESC, 0x74, 16); // WPC1252 — suporte a acentos
 const BOLD_ON     = cmd(ESC, 0x45, 1);
 const BOLD_OFF    = cmd(ESC, 0x45, 0);
 const ALIGN_CT    = cmd(ESC, 0x61, 1);
@@ -40,13 +42,35 @@ function formatarData(isoStr) {
 }
 
 function montarBuffer(venda) {
-  const nomeLoja = config.nomeLoja || 'Quitanda da Família';
+  const fiscal = db.get('SELECT * FROM config_fiscal WHERE id = 1') || {};
+  const nomeLoja = fiscal.fantasia || fiscal.razao_social || config.nomeLoja || 'Quitanda da Família';
   const sep = '-'.repeat(40);
+
+  const cabecalho = [ALIGN_CT, BOLD_ON, txt(nomeLoja), BOLD_OFF];
+
+  if (fiscal.razao_social && fiscal.razao_social !== nomeLoja)
+    cabecalho.push(txt(fiscal.razao_social.substring(0, 40)));
+
+  if (fiscal.cnpj)
+    cabecalho.push(txt('CNPJ: ' + fiscal.cnpj));
+
+  if (fiscal.ie)
+    cabecalho.push(txt('IE: ' + fiscal.ie));
+
+  const endereco = [fiscal.logradouro, fiscal.numero].filter(Boolean).join(', ');
+  if (endereco) cabecalho.push(txt(endereco.substring(0, 40)));
+
+  const enderecoL2 = [fiscal.bairro, fiscal.municipio, fiscal.uf].filter(Boolean).join(' - ');
+  if (enderecoL2) cabecalho.push(txt(enderecoL2.substring(0, 40)));
+
+  if (fiscal.telefone)
+    cabecalho.push(txt('Tel: ' + fiscal.telefone));
+
+  cabecalho.push(txt(''));
+
   const partes = [
-    INIT,
-    ALIGN_CT, BOLD_ON, SIZE_2X, txt(nomeLoja), SIZE_NORMAL, BOLD_OFF,
-    txt('CNPJ: ---.---.---/----'),
-    txt(''),
+    INIT, CODEPAGE,
+    ...cabecalho,
     ALIGN_LT,
     txt(sep),
     txt('Data: ' + formatarData(venda.data_hora)),

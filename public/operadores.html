@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Operadores — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+<script>
+  (async () => {
+    try {
+      const res = await fetch('/api/operador-atual').then(r => r.json());
+      const perfil = res.operador?.perfil || localStorage.getItem('perfil') || 'operador';
+      if (perfil !== 'admin') { alert('Acesso restrito ao administrador.'); location.href = '/pdv.html'; }
+    } catch { if (localStorage.getItem('perfil') !== 'admin') { location.href = '/pdv.html'; } }
+  })();
+</script>
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/fechamento.html'">🏁 Fechamento de Caixa</button>
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="produtos-layout">
+  <div class="produtos-toolbar">
+    <h2 style="color:var(--verde-escuro)">👥 Operadores</h2>
+    <button class="btn btn-verde" onclick="abrirNovo()">+ Novo Operador</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+    <div class="card">
+      <h3 style="margin-bottom:12px">🌅 Manhã</h3>
+      <div id="listaManha"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">🌆 Tarde</h3>
+      <div id="listaTarde"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <h2 id="modalTitulo">Novo Operador</h2>
+      <button class="modal-fechar" onclick="fecharModal()">×</button>
+    </div>
+    <form onsubmit="salvar(event)">
+      <input type="hidden" id="opId">
+      <div class="form-group">
+        <label>Nome *</label>
+        <input type="text" id="opNome" required>
+      </div>
+      <div class="form-group">
+        <label>Senha <span id="senhaObs" style="font-weight:normal;color:#888">(deixe em branco para não alterar)</span></label>
+        <input type="password" id="opSenha" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Turno *</label>
+        <select id="opTurno">
+          <option value="manha">🌅 Manhã</option>
+          <option value="tarde">🌆 Tarde</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Perfil *</label>
+        <select id="opPerfil">
+          <option value="operador">Operador</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Código Pessoal <span style="font-size:11px;color:#888">(escaneie ou digite — usado para autorizar cancelamentos)</span></label>
+        <input type="text" id="opCodigoBarras" placeholder="Escaneie o crachá ou digite o código">
+      </div>
+      <div class="d-flex gap-8 mt-16">
+        <button type="button" class="btn btn-cinza" style="flex:1" onclick="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn btn-verde" style="flex:2">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let operadores = [];
+
+  async function carregar() {
+    operadores = await fetch('/api/operadores').then(r => r.json());
+    renderListas();
+  }
+
+  function renderListas() {
+    const manha = operadores.filter(o => o.turno === 'manha');
+    const tarde = operadores.filter(o => o.turno === 'tarde');
+    document.getElementById('listaManha').innerHTML = renderCards(manha);
+    document.getElementById('listaTarde').innerHTML = renderCards(tarde);
+  }
+
+  function renderCards(lista) {
+    if (!lista.length) return '<p style="color:#aaa;font-size:13px">Nenhum operador</p>';
+    return lista.map(o => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0">
+        <div>
+          <strong>${o.nome}</strong>
+          <span style="font-size:12px;color:#888;margin-left:6px">${o.perfil === 'admin' ? '⭐ Admin' : 'Operador'}</span>
+          ${o.codigo_barras ? `<span style="font-size:11px;color:#E8816D;margin-left:6px">🔖 código cadastrado</span>` : '<span style="font-size:11px;color:#e67e22;margin-left:6px">sem código</span>'}
+        </div>
+        <div class="d-flex gap-8">
+          ${o.codigo_barras ? `<button class="btn btn-sm" style="background:#E8816D;color:#fff" onclick="imprimirCracha(${o.id})">🖨️ Crachá</button>` : ''}
+          <button class="btn btn-verde btn-sm" onclick="editar(${o.id})">✏️</button>
+          <button class="btn btn-vermelho btn-sm" onclick="excluir(${o.id}, '${o.nome}')">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function imprimirCracha(id) {
+    const o = operadores.find(x => x.id === id);
+    if (!o || !o.codigo_barras) return;
+
+    const cracha = `
+      <div class="cracha">
+        <div class="cracha-logo">🛒 QUITANDA DA FAMÍLIA</div>
+        <div class="cracha-nome">${o.nome}</div>
+        <div class="cracha-perfil">${o.perfil === 'admin' ? '⭐ Administrador' : 'Operador'}</div>
+        <svg class="barcode"></svg>
+      </div>`;
+
+    const win = window.open('', '_blank', 'width=800,height=600');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Crachá — ${o.nome}</title>
+      <style>
+        @page { size: A4; margin: 15mm; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #fff; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16mm; padding: 0; }
+        .cracha { border: 2px solid #E8816D; border-radius: 10px; padding: 20px 28px; text-align: center; }
+        .cracha-logo { font-size: 12px; color: #E8816D; font-weight: bold; letter-spacing: 1px; margin-bottom: 6px; }
+        .cracha-nome { font-size: 22px; font-weight: bold; margin: 0 0 6px; }
+        .cracha-perfil { font-size: 13px; color: #888; margin-bottom: 14px; }
+        svg { display: block; margin: 0 auto; }
+      </style>
+    </head><body>
+      <div class="grid">
+        ${cracha}${cracha}${cracha}${cracha}
+      </div>
+      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+      <script>
+        window.onload = function() {
+          document.querySelectorAll('.barcode').forEach(function(el) {
+            JsBarcode(el, '${o.codigo_barras}', { format:'CODE128', width:2, height:55, displayValue:false, margin:4 });
+          });
+          setTimeout(function(){ window.print(); }, 300);
+          window.onafterprint = function(){ window.close(); };
+        };
+      <\/script>
+    </body></html>`);
+    win.document.close();
+  }
+
+  function abrirNovo() {
+    document.getElementById('modalTitulo').textContent = 'Novo Operador';
+    document.getElementById('opId').value = '';
+    document.getElementById('opNome').value = '';
+    document.getElementById('opSenha').value = '';
+    document.getElementById('opTurno').value = 'manha';
+    document.getElementById('opPerfil').value = 'operador';
+    document.getElementById('opCodigoBarras').value = '';
+    document.getElementById('senhaObs').style.display = 'none';
+    document.getElementById('opSenha').required = true;
+    document.getElementById('modal').classList.add('ativo');
+  }
+
+  function editar(id) {
+    const o = operadores.find(x => x.id === id);
+    if (!o) return;
+    document.getElementById('modalTitulo').textContent = 'Editar Operador';
+    document.getElementById('opId').value = o.id;
+    document.getElementById('opNome').value = o.nome;
+    document.getElementById('opSenha').value = '';
+    document.getElementById('opTurno').value = o.turno || 'manha';
+    document.getElementById('opPerfil').value = o.perfil || 'operador';
+    document.getElementById('opCodigoBarras').value = o.codigo_barras || '';
+    document.getElementById('senhaObs').style.display = '';
+    document.getElementById('opSenha').required = false;
+    document.getElementById('modal').classList.add('ativo');
+  }
+
+  async function salvar(e) {
+    e.preventDefault();
+    const id = document.getElementById('opId').value;
+    const payload = {
+      nome: document.getElementById('opNome').value,
+      senha: document.getElementById('opSenha').value,
+      turno: document.getElementById('opTurno').value,
+      perfil: document.getElementById('opPerfil').value,
+      codigo_barras: document.getElementById('opCodigoBarras').value || null
+    };
+    const url = id ? `/api/operadores/${id}` : '/api/operadores';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json());
+    if (res.ok) { fecharModal(); carregar(); }
+    else alert(res.erro || 'Erro ao salvar');
+  }
+
+  async function excluir(id, nome) {
+    if (!confirm(`Excluir operador "${nome}"?`)) return;
+    const res = await fetch(`/api/operadores/${id}`, { method: 'DELETE' }).then(r => r.json());
+    if (res.ok) { carregar(); return; }
+    if (res.temVendas) {
+      if (confirm(`O operador "${res.nome}" possui ${res.totalVendas} venda(s) registrada(s).\n\nDeseja excluir o operador E TODAS AS SUAS VENDAS?\n⚠️ Esta ação não pode ser desfeita!`)) {
+        const res2 = await fetch(`/api/operadores/${id}?forcar=1`, { method: 'DELETE' }).then(r => r.json());
+        if (res2.ok) carregar();
+        else alert(res2.erro || 'Erro ao excluir');
+      }
+      return;
+    }
+    alert(res.erro || 'Erro ao excluir');
+  }
+
+  function fecharModal() { document.getElementById('modal').classList.remove('ativo'); }
+
+  carregar();
+</script>
+</body>
+</html>

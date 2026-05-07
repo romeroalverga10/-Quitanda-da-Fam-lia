@@ -472,7 +472,10 @@ function renderCarrinho() {
   localStorage.setItem('pdv_carrinho', JSON.stringify(carrinho));
 }
 
+let _removendo = false;
 function _removerUmaUnidade(idx) {
+  if (_removendo) return;
+  _removendo = true;
   const item = carrinho[idx];
   if (item.unidade === 'kg' || item.quantidade <= 1) {
     carrinho.splice(idx, 1);
@@ -481,16 +484,16 @@ function _removerUmaUnidade(idx) {
     item.subtotal = item.quantidade * item.preco_unitario;
   }
   renderCarrinho();
+  setTimeout(() => { _removendo = false; }, 300);
 }
 
 function pedirAutorizacaoCancelar(idx) {
-  _modoRemocao = 'tudo';
   if (perfilAtual === 'admin') {
-    carrinho.splice(idx, 1);
-    renderCarrinho();
+    _removerUmaUnidade(idx);
     return;
   }
   _idxCancelar = idx;
+  _modoRemocao = 'um';
   document.getElementById('cancelItemNome').textContent = carrinho[idx].nome;
   document.getElementById('inputCodigoAdmin').value = '';
   document.getElementById('cancelErro').textContent = '';
@@ -516,12 +519,7 @@ async function verificarAdminECancelar() {
   }
 
   fecharModal('modalAutorizarCancel');
-  if (_modoRemocao === 'tudo') {
-    carrinho.splice(_idxCancelar, 1);
-    renderCarrinho();
-  } else {
-    _removerUmaUnidade(_idxCancelar);
-  }
+  _removerUmaUnidade(_idxCancelar);
   _idxCancelar = null;
   toast(`Autorizado por ${res.nome}`, 'sucesso');
 }

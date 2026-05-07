@@ -27,6 +27,7 @@ let tabAtiva = 'dinheiro';
 let linhaVazia = null;
 let perfilAtual = 'operador';
 let _idxCancelar = null;
+let _modoRemocao  = 'um'; // 'um' = −1 unidade | 'tudo' = remove item inteiro
 
 // ── Inicialização ──────────────────────────────────
 async function init() {
@@ -483,8 +484,10 @@ function _removerUmaUnidade(idx) {
 }
 
 function pedirAutorizacaoCancelar(idx) {
+  _modoRemocao = 'tudo';
   if (perfilAtual === 'admin') {
-    _removerUmaUnidade(idx);
+    carrinho.splice(idx, 1);
+    renderCarrinho();
     return;
   }
   _idxCancelar = idx;
@@ -513,9 +516,14 @@ async function verificarAdminECancelar() {
   }
 
   fecharModal('modalAutorizarCancel');
-  _removerUmaUnidade(_idxCancelar);
+  if (_modoRemocao === 'tudo') {
+    carrinho.splice(_idxCancelar, 1);
+    renderCarrinho();
+  } else {
+    _removerUmaUnidade(_idxCancelar);
+  }
   _idxCancelar = null;
-  toast(`Cancelamento autorizado por ${res.nome}`, 'sucesso');
+  toast(`Autorizado por ${res.nome}`, 'sucesso');
 }
 
 function removerItem(idx) {
@@ -525,7 +533,8 @@ function removerItem(idx) {
 
 function decrementarItem(idx) {
   const item = carrinho[idx];
-  if (item.unidade === 'kg') { toast('Para kg, use ✕ e adicione novamente', 'erro'); return; }
+  if (item.unidade === 'kg') { toast('Para kg, use ✕ e adicione novamente', 'aviso'); return; }
+  _modoRemocao = 'um';
   if (perfilAtual === 'admin') {
     _removerUmaUnidade(idx);
     return;

@@ -7,3 +7,8 @@ APD_607R1_T20X_WM/
 APD_607R1_T20X_WM.zip
 
 .vercel
+certs/
+backups/
+.claude/
+database/Informacoes/
+licenca-server/

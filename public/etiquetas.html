@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiquetas de Prateleira — Quitanda da Família</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Barlow', sans-serif; background: #fdf4f2; }
+
+    .et-app { padding: 24px; }
+
+    .et-header {
+      background: #C4614E;
+      color: #fff;
+      padding: 20px 28px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .et-header h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+    .et-header p { font-size: 13px; opacity: 0.75; margin-top: 2px; }
+
+    .btn-imprimir {
+      background: #F0A090;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .btn-imprimir:hover { background: #b05540; }
+    .btn-imprimir:disabled { background: #aaa; cursor: not-allowed; }
+
+    .et-painel {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* ── Sidebar ── */
+    .et-sidebar {
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid #f4c5bc;
+      overflow: hidden;
+    }
+    .et-sidebar-header {
+      background: #fdf4f2;
+      border-bottom: 1.5px solid #f4c5bc;
+      padding: 14px 16px;
+    }
+    .et-sidebar-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #C4614E;
+      margin-bottom: 8px;
+    }
+    .et-busca {
+      width: 100%;
+      border: 1.5px solid #f4c5bc;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: 'Barlow', sans-serif;
+      outline: none;
+    }
+    .et-busca:focus { border-color: #F0A090; }
+
+    .et-acoes { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-sm {
+      flex: 1;
+      padding: 6px;
+      border: 1.5px solid #f4c5bc;
+      border-radius: 6px;
+      background: #fff;
+      color: #C4614E;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-sm:hover { background: #fdf4f2; border-color: #F0A090; }
+
+    .et-lista { max-height: 420px; overflow-y: auto; }
+
+    .et-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #fdf4f2;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .et-item:hover { background: #fdf4f2; }
+    .et-item.selecionado { background: #fdf4f2; }
+
+    .et-check {
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      border: 2px solid #F0A090;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+    }
+    .et-check.marcado { background: #C4614E; border-color: #C4614E; color: #fff; }
+
+    .et-item-info { flex: 1; min-width: 0; }
+    .et-item-nome { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .et-item-det { font-size: 11px; color: #777; }
+    .et-item-preco { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; color: #C4614E; font-size: 15px; }
+
+    /* ── Preview area ── */
+    .et-preview {
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid #f4c5bc;
+      overflow: hidden;
+    }
+    .et-preview-header {
+      background: #fdf4f2;
+      border-bottom: 1.5px solid #f4c5bc;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .et-preview-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #C4614E;
+    }
+    .et-badge {
+      background: #C4614E;
+      color: #fff;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .et-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 280px);
+      gap: 12px;
+      padding: 20px;
+    }
+    .et-vazio {
+      text-align: center;
+      color: #aaa;
+      padding: 48px 20px;
+      font-size: 14px;
+    }
+
+    /* ── Etiqueta (preview — proporcional a 10×3cm) ── */
+    .etiqueta {
+      width: 280px;
+      border: 1.5px solid #C4614E;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 8px rgba(26,71,42,.10);
+    }
+    .etq-header {
+      background: #fff;
+      color: #111;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 8px;
+      font-size: 10px;
+      border-bottom: 1px solid #222;
+    }
+    .etq-loja { font-weight: 700; font-family: 'Barlow Condensed', sans-serif; letter-spacing: .5px; }
+    .etq-cat {
+      background: #f0f0f0;
+      color: #333;
+      border-radius: 2px;
+      padding: 0px 5px;
+      font-size: 9px;
+    }
+    .etq-nome {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 30px;
+      color: #111;
+      padding: 2px 8px 0;
+      line-height: 1.1;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+    .etq-unidade { font-size: 9px; color: #444; padding: 0 8px 1px; font-weight: 500; }
+    .etq-preco {
+      background: #fff;
+      border-top: 1.5px solid #111;
+      border-bottom: 1.5px solid #111;
+      padding: 2px 8px;
+      display: flex;
+      align-items: baseline;
+      gap: 1px;
+    }
+    .etq-cifrao { font-size: 11px; font-weight: 700; color: #111; }
+    .etq-reais {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 40px;
+      font-weight: 900;
+      color: #111;
+      line-height: 1;
+    }
+    .etq-centavos {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111;
+      align-self: flex-start;
+      margin-top: 3px;
+    }
+    .etq-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 1px 8px;
+      font-size: 8px;
+      color: #555;
+    }
+    .etq-barra {
+      height: 3px;
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+<script>
+  (async () => {
+    try {
+      const res = await fetch('/api/operador-atual').then(r => r.json());
+      const perfil = res.operador?.perfil || localStorage.getItem('perfil') || 'operador';
+      if (perfil !== 'admin') { alert('Acesso restrito ao administrador.'); location.href = '/pdv.html'; }
+    } catch { if (localStorage.getItem('perfil') !== 'admin') { location.href = '/pdv.html'; } }
+  })();
+</script>
+
+<header class="header">
+  <h1>🛒 Quitanda da Família</h1>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/produtos.html'">Produtos</button>
+    <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
+  </div>
+</header>
+
+<div class="et-app">
+  <!-- Cabeçalho da página -->
+  <div class="et-header">
+    <div>
+      <h1>🏷️ Etiquetas de Prateleira</h1>
+      <p>Selecione os produtos e imprima as etiquetas (10 × 3 cm)</p>
+    </div>
+    <button class="btn-imprimir" id="btnImprimir" disabled onclick="imprimirEtiquetas()">
+      🖨️ Imprimir <span id="labelQtd"></span>
+    </button>
+  </div>
+
+  <div class="et-painel">
+    <!-- Sidebar -->
+    <div class="et-sidebar">
+      <div class="et-sidebar-header">
+        <h2>Produtos do Estoque</h2>
+        <input class="et-busca" id="busca" placeholder="🔍 Buscar produto..." oninput="filtrarProdutos()">
+        <div class="et-acoes">
+          <button class="btn-sm" onclick="selecionarTodos()">✅ Todos</button>
+          <button class="btn-sm" onclick="limparSelecao()">🗑 Limpar</button>
+        </div>
+      </div>
+      <div class="et-lista" id="listaProdutos">
+        <div class="et-vazio">Carregando produtos...</div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="et-preview">
+      <div class="et-preview-header">
+        <h2>Prévia das Etiquetas</h2>
+        <span class="et-badge" id="badge">0 selecionada(s)</span>
+      </div>
+      <div id="previewArea">
+        <div class="et-vazio">Selecione produtos na lista ao lado para visualizar as etiquetas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let todosProdutos = [];
+  let selecionados = new Set();
+
+  // ── Carrega produtos da API ──────────────────────────────────────────────────
+  async function carregarProdutos() {
+    try {
+      todosProdutos = await fetch('/api/produtos').then(r => r.json());
+      renderLista(todosProdutos);
+    } catch {
+      document.getElementById('listaProdutos').innerHTML =
+        '<div class="et-vazio">Erro ao carregar produtos.</div>';
+    }
+  }
+
+  // ── Renderiza lista lateral ──────────────────────────────────────────────────
+  function renderLista(produtos) {
+    const lista = document.getElementById('listaProdutos');
+    if (!produtos.length) {
+      lista.innerHTML = '<div class="et-vazio">Nenhum produto encontrado.</div>';
+      return;
+    }
+    lista.innerHTML = produtos.map(p => `
+      <div class="et-item ${selecionados.has(p.id) ? 'selecionado' : ''}"
+           onclick="toggleSelecionado(${p.id})" id="item-${p.id}">
+        <div class="et-check ${selecionados.has(p.id) ? 'marcado' : ''}" id="chk-${p.id}">
+          ${selecionados.has(p.id) ? '✓' : ''}
+        </div>
+        <div class="et-item-info">
+          <div class="et-item-nome">${p.nome}</div>
+          <div class="et-item-det">${p.unidade || ''} ${p.categoria ? '· ' + p.categoria : ''}</div>
+        </div>
+        <div class="et-item-preco">R$ ${Number(p.preco_venda ?? p.preco ?? 0).toFixed(2)}</div>
+      </div>
+    `).join('');
+  }
+
+  // ── Toggle seleção ───────────────────────────────────────────────────────────
+  function toggleSelecionado(id) {
+    if (selecionados.has(id)) selecionados.delete(id);
+    else selecionados.add(id);
+    atualizarUI();
+  }
+
+  function selecionarTodos() {
+    const filtrados = getProdutosFiltrados();
+    filtrados.forEach(p => selecionados.add(p.id));
+    atualizarUI();
+  }
+
+  function limparSelecao() {
+    selecionados.clear();
+    atualizarUI();
+  }
+
+  function filtrarProdutos() {
+    renderLista(getProdutosFiltrados());
+  }
+
+  function getProdutosFiltrados() {
+    const busca = document.getElementById('busca').value.toLowerCase();
+    return todosProdutos.filter(p => p.nome.toLowerCase().includes(busca));
+  }
+
+  // ── Atualiza preview e botão ─────────────────────────────────────────────────
+  function atualizarUI() {
+    renderLista(getProdutosFiltrados());
+
+    const paraImprimir = todosProdutos.filter(p => selecionados.has(p.id));
+    const qtd = paraImprimir.length;
+
+    document.getElementById('badge').textContent = `${qtd} selecionada(s)`;
+    document.getElementById('labelQtd').textContent = qtd > 0 ? `(${qtd})` : '';
+
+    const btn = document.getElementById('btnImprimir');
+    btn.disabled = qtd === 0;
+
+    const area = document.getElementById('previewArea');
+    if (!qtd) {
+      area.innerHTML = '<div class="et-vazio">Selecione produtos na lista ao lado para visualizar as etiquetas</div>';
+    } else {
+      area.innerHTML = `<div class="et-grid">${paraImprimir.map(criarEtiquetaHTML).join('')}</div>`;
+    }
+  }
+
+  // ── Gera HTML de uma etiqueta ────────────────────────────────────────────────
+  function criarEtiquetaHTML(p) {
+    const preco = Number(p.preco_venda ?? p.preco ?? 0);
+    const partes = preco.toFixed(2).split('.');
+    const reais = partes[0];
+    const centavos = partes[1];
+    const codigo = p.codigo_barras || p.codigo || '';
+    const unidade = p.unidade || '';
+    const categoria = p.categoria || '';
+
+    return `
+      <div class="etiqueta">
+        <div class="etq-header">
+          <span class="etq-loja">🛒 Quitanda da Família</span>
+          ${categoria ? `<span class="etq-cat">${categoria}</span>` : ''}
+        </div>
+        <div class="etq-nome">${p.nome}</div>
+        ${unidade ? `<div class="etq-unidade">${unidade}</div>` : ''}
+        <div class="etq-preco">
+          <span class="etq-cifrao">R$</span>
+          <span class="etq-reais">${reais}</span>
+          <span class="etq-centavos">,${centavos}</span>
+        </div>
+        <div class="etq-footer">
+          <span>${codigo}</span>
+          ${unidade ? `<span>por ${unidade}</span>` : ''}
+        </div>
+        <div class="etq-barra"></div>
+      </div>`;
+  }
+
+  // ── Impressão ────────────────────────────────────────────────────────────────
+  function imprimirEtiquetas() {
+    const paraImprimir = todosProdutos.filter(p => selecionados.has(p.id));
+    if (!paraImprimir.length) return;
+
+    const etiquetasHTML = paraImprimir.map(criarEtiquetaHTML).join('');
+
+    const janela = window.open('', '_blank');
+    janela.document.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiquetas — Quitanda da Família</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Barlow', sans-serif; background: #fff; }
+
+    .print-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 10cm);
+      gap: 0.4cm;
+      padding: 0.5cm;
+    }
+
+    .etiqueta {
+      width: 10cm;
+      height: 3cm;
+      border: 1.5px solid #C4614E;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .etq-header {
+      background: #fff;
+      color: #111;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 7px;
+      font-size: 7pt;
+      border-bottom: 1px solid #222;
+    }
+    .etq-loja { font-weight: 700; font-family: 'Barlow Condensed', sans-serif; letter-spacing: .5px; }
+    .etq-cat {
+      background: #f0f0f0;
+      color: #333;
+      border-radius: 2px;
+      padding: 0px 4px;
+      font-size: 6pt;
+    }
+
+    .etq-nome {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800;
+      font-size: 20pt;
+      color: #111;
+      padding: 2px 8px 0;
+      line-height: 1.1;
+      flex: 1;
+      text-align: center;
+    }
+    .etq-unidade { font-size: 7pt; color: #444; padding: 0 8px 1px; font-weight: 500; }
+
+    .etq-preco {
+      background: #fff;
+      border-top: 1.5px solid #111;
+      border-bottom: 1.5px solid #111;
+      padding: 2px 8px;
+      display: flex;
+      align-items: baseline;
+      gap: 1px;
+    }
+    .etq-cifrao { font-size: 8pt; font-weight: 700; color: #111; }
+    .etq-reais {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26pt;
+      font-weight: 900;
+      color: #111;
+      line-height: 1;
+    }
+    .etq-centavos {
+      font-size: 13pt;
+      font-weight: 700;
+      color: #111;
+      align-self: flex-start;
+      margin-top: 3px;
+    }
+
+    .etq-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 8px;
+      font-size: 6pt;
+      color: #555;
+    }
+    .etq-barra {
+      height: 3px;
+      background: #111;
+    }
+
+    @media print {
+      @page { margin: 0.3cm; size: A4; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-grid">${etiquetasHTML}</div>
+  <script>
+    window.onload = () => { window.print(); window.close(); }
+  <\/script>
+</body>
+</html>`);
+    janela.document.close();
+  }
+
+  carregarProdutos();
+</script>
+</body>
+</html>

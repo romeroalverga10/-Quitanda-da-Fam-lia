@@ -24,7 +24,7 @@ function filtrar() {
   const busca = document.getElementById('busca').value.toLowerCase();
   const cat = document.getElementById('filtroCategoria').value;
   const filtrados = todosProdutos.filter(p => {
-    const matchBusca = p.nome.toLowerCase().includes(busca) || (p.codigo_barras || '').includes(busca);
+    const matchBusca = p.nome.toLowerCase().includes(busca) || (p.codigo_barras || '').includes(busca) || (p.codigo_produto || '').includes(busca);
     const matchCat = !cat || String(p.categoria_id) === String(cat);
     return matchBusca && matchCat;
   });
@@ -34,7 +34,7 @@ function filtrar() {
 function renderTabela(lista) {
   const tbody = document.getElementById('corpoProdutos');
   if (!lista.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="color:#aaa;padding:20px">Nenhum produto encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center" style="color:#aaa;padding:20px">Nenhum produto encontrado.</td></tr>';
     return;
   }
   tbody.innerHTML = lista.map(p => {
@@ -55,6 +55,7 @@ function renderTabela(lista) {
     return `
       <tr class="${cls}">
         <td>${p.nome}</td>
+        <td>${p.codigo_produto || '—'}</td>
         <td>${p.codigo_barras || '—'}</td>
         <td>${p.categoria_nome}</td>
         <td>R$ ${fmt(p.preco)}</td>
@@ -91,6 +92,7 @@ function editarProduto(id) {
   document.getElementById('prodId').value = p.id;
   document.getElementById('pNome').value = p.nome;
   document.getElementById('pCodigo').value = p.codigo_barras || '';
+  document.getElementById('pCodigoProduto').value = p.codigo_produto || '';
   document.getElementById('pCategoria').value = p.categoria_id;
   document.getElementById('pPreco').value = p.preco;
   document.getElementById('pUnidade').value = p.unidade;
@@ -111,6 +113,7 @@ async function salvarProduto(e) {
   const payload = {
     nome: document.getElementById('pNome').value.trim(),
     codigo_barras: document.getElementById('pCodigo').value || null,
+    codigo_produto: document.getElementById('pCodigoProduto').value.trim() || null,
     categoria_id: catId || 1,
     preco: parseFloat(document.getElementById('pPreco').value) || 0,
     unidade: document.getElementById('pUnidade').value || 'unidade',

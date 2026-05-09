@@ -225,6 +225,7 @@ function initDB() {
   try { db.exec('ALTER TABLE produtos ADD COLUMN ncm TEXT'); } catch (e) {}
   try { db.exec('ALTER TABLE produtos ADD COLUMN origem INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
   try { db.exec('ALTER TABLE produtos ADD COLUMN cest TEXT'); } catch (e) {}
+  try { db.exec('ALTER TABLE produtos ADD COLUMN codigo_produto TEXT UNIQUE'); } catch (e) {}
 
   const cfExiste = db.get('SELECT id FROM config_fiscal WHERE id = 1');
   if (!cfExiste) db.run('INSERT INTO config_fiscal (id) VALUES (1)');

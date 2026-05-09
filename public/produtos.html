@@ -40,6 +40,7 @@
 <header class="header">
   <h1>🛒 Quitanda da Família</h1>
   <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="location.href='/etiquetas.html'">🏷️ Etiquetas</button>
     <button class="btn btn-outline btn-sm" onclick="location.href='/validade.html'">⏰ Validade</button>
     <button class="btn btn-outline btn-sm" onclick="location.href='/pdv.html'">← Voltar ao PDV</button>
   </div>
@@ -61,7 +62,8 @@
       <thead>
         <tr>
           <th>Nome</th>
-          <th>Código</th>
+          <th>Cód. Produto</th>
+          <th>Cód. Barras</th>
           <th>Categoria</th>
           <th>Preço</th>
           <th>Unidade</th>
@@ -94,6 +96,10 @@
         <div class="form-group">
           <label>Código de Barras</label>
           <input type="text" id="pCodigo">
+        </div>
+        <div class="form-group">
+          <label>Cód. do Produto</label>
+          <input type="text" id="pCodigoProduto" placeholder="Ex: 001">
         </div>
         <div class="form-group">
           <label>Categoria</label>

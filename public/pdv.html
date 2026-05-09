@@ -54,7 +54,10 @@
 
     <!-- Barra de código de barras -->
     <div class="campo-barras">
-      <input type="text" id="inputBarras" placeholder="🔍 Código de barras — pressione Enter" autofocus autocomplete="off">
+      <div style="position:relative;flex:1">
+        <input type="text" id="inputBarras" placeholder="🔍 Nome, código de barras ou cód. do produto" autofocus autocomplete="new-password" style="width:100%">
+        <div id="autocompleteList" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:1000;max-height:280px;overflow-y:auto"></div>
+      </div>
       <button class="btn btn-pdv-buscar" onclick="buscarPorCodigo()">Buscar</button>
     </div>
 
@@ -94,13 +97,13 @@
       </div>
     </div>
 
-    <div style="text-align:center;font-size:13px;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-bottom:8px;font-style:italic">
-      ✝️ Deus seja louvado
-    </div>
     <button class="btn" onclick="pedirCpf()" id="btnCpf" disabled
       style="background:#555;color:#fff;font-size:13px;padding:8px;margin-bottom:6px;width:100%">
       CPF na Nota
     </button>
+    <div style="text-align:center;font-size:13px;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-bottom:8px;font-style:italic">
+      ✝️ Deus seja louvado
+    </div>
     <button class="btn btn-finalizar" onclick="abrirPagamento()" id="btnFinalizar" disabled>
       Finalizar Venda
     </button>

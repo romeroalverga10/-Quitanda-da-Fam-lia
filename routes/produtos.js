@@ -87,14 +87,32 @@ router.delete('/categorias/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+router.get('/busca', (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.json([]);
+
+  const termo = `%${q}%`;
+  const rows = db.all(`
+    SELECT p.*, c.nome AS categoria_nome
+    FROM produtos p
+    JOIN categorias c ON p.categoria_id = c.id
+    WHERE p.ativo = 1
+      AND (p.nome LIKE ? OR p.codigo_barras LIKE ? OR p.codigo_produto LIKE ? OR CAST(p.id AS TEXT) = ? OR p.id = CAST(? AS INTEGER))
+    ORDER BY p.nome
+    LIMIT 20
+  `, [termo, termo, termo, q, q]);
+
+  res.json(rows);
+});
+
 router.get('/barcode/:codigo', (req, res) => {
   const codigo = req.params.codigo;
   const p = db.get(`
     SELECT p.*, c.nome AS categoria_nome
     FROM produtos p
     JOIN categorias c ON p.categoria_id = c.id
-    WHERE p.codigo_barras = ? OR CAST(p.id AS TEXT) = ?
-  `, [codigo, codigo]);
+    WHERE p.codigo_barras = ? OR p.codigo_produto = ? OR CAST(p.id AS TEXT) = ?
+  `, [codigo, codigo, codigo]);
 
   if (!p) return res.status(404).json({ erro: 'Produto não encontrado' });
   res.json(p);
@@ -106,16 +124,16 @@ function limparNCM(ncm) {
 }
 
 router.post('/', (req, res) => {
-  const { nome, codigo_barras, categoria_id, preco, unidade, estoque_atual, estoque_minimo, data_validade, ncm, origem } = req.body;
+  const { nome, codigo_barras, codigo_produto, categoria_id, preco, unidade, estoque_atual, estoque_minimo, data_validade, ncm, origem } = req.body;
   if (!nome) {
     return res.status(400).json({ erro: 'O nome do produto é obrigatório' });
   }
 
   try {
     const result = db.run(
-      `INSERT INTO produtos (nome, codigo_barras, categoria_id, preco, unidade, estoque_atual, estoque_minimo, data_validade, ncm, origem)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nome, codigo_barras || null, categoria_id || 1, preco || 0, unidade || 'unidade',
+      `INSERT INTO produtos (nome, codigo_barras, codigo_produto, categoria_id, preco, unidade, estoque_atual, estoque_minimo, data_validade, ncm, origem)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nome, codigo_barras || null, codigo_produto || null, categoria_id || 1, preco || 0, unidade || 'unidade',
        estoque_atual || 0, estoque_minimo || 0, data_validade || null,
        limparNCM(ncm), origem || 0]
     );
@@ -130,11 +148,11 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
   try {
-    const { nome, codigo_barras, categoria_id, preco, unidade, estoque_atual, estoque_minimo, data_validade, ncm, origem } = req.body;
+    const { nome, codigo_barras, codigo_produto, categoria_id, preco, unidade, estoque_atual, estoque_minimo, data_validade, ncm, origem } = req.body;
     db.run(
-      `UPDATE produtos SET nome=?, codigo_barras=?, categoria_id=?, preco=?, unidade=?,
+      `UPDATE produtos SET nome=?, codigo_barras=?, codigo_produto=?, categoria_id=?, preco=?, unidade=?,
        estoque_atual=?, estoque_minimo=?, data_validade=?, ncm=?, origem=? WHERE id=?`,
-      [nome, codigo_barras || null, categoria_id, preco, unidade,
+      [nome, codigo_barras || null, codigo_produto || null, categoria_id, preco, unidade,
        estoque_atual, estoque_minimo, data_validade || null,
        limparNCM(ncm), origem || 0, req.params.id]
     );

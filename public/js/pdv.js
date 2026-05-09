@@ -59,7 +59,9 @@ async function init() {
     } catch { carrinho = []; }
   }
 
-  document.getElementById('inputBarras').focus();
+  const inp = document.getElementById('inputBarras');
+  inp.value = '';
+  inp.focus();
   verificarAlertas();
   setInterval(verificarAlertas, 60000);
 }
@@ -434,6 +436,7 @@ function renderCarrinho() {
     document.getElementById('resumoUltimo').textContent = 'R$ 0,00';
     document.getElementById('btnFinalizar').disabled = true;
     document.getElementById('btnCpf').disabled = true;
+    localStorage.removeItem('pdv_carrinho');
     return;
   }
 
@@ -487,13 +490,21 @@ function _removerUmaUnidade(idx) {
   setTimeout(() => { _removendo = false; }, 300);
 }
 
+function _removerLinhaInteira(idx) {
+  if (_removendo) return;
+  _removendo = true;
+  carrinho.splice(idx, 1);
+  renderCarrinho();
+  setTimeout(() => { _removendo = false; }, 300);
+}
+
 function pedirAutorizacaoCancelar(idx) {
   if (perfilAtual === 'admin') {
-    _removerUmaUnidade(idx);
+    _removerLinhaInteira(idx);
     return;
   }
   _idxCancelar = idx;
-  _modoRemocao = 'um';
+  _modoRemocao = 'linha';
   document.getElementById('cancelItemNome').textContent = carrinho[idx].nome;
   document.getElementById('inputCodigoAdmin').value = '';
   document.getElementById('cancelErro').textContent = '';
@@ -519,7 +530,11 @@ async function verificarAdminECancelar() {
   }
 
   fecharModal('modalAutorizarCancel');
-  _removerUmaUnidade(_idxCancelar);
+  if (_modoRemocao === 'linha') {
+    _removerLinhaInteira(_idxCancelar);
+  } else {
+    _removerUmaUnidade(_idxCancelar);
+  }
   _idxCancelar = null;
   toast(`Autorizado por ${res.nome}`, 'sucesso');
 }
